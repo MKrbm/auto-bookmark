@@ -1,0 +1,71 @@
+# 環境構築
+①nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+
+
+環境変数の設定
+echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"' >> ~/.bashrc
+echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+
+source ~/.bashrc
+
+
+nvm install --lts
+
+node -v
+v20.14.0
+
+mkdir typescript
+cd 
+npm init -y
+npm install --save-dev typescript
+
+npx tsc --init
+
+ファイル作成後
+npx tsc
+
+node index.js
+-----------------------------------------------------------------------
+
+ # いったんpythonを使用する
+ pwd
+/home/jorge/project/autobook/auto-bookmark/python
+pyenv install 3.10.0
+pyenv virtualenv 3.10.0 jorge_env
+pyenv activate jorge_env
+
+# 必要なmoduleのinstall
+echo "beautifulsoup4" >> requirements.txt
+echo "langchain_community" >> requirements.txt
+echo "bs4" >> requirements.txt
+pip install -r requirements.txt
+
+
+ 環境変数設定
+ export PATH="$HOME/.pyenv/bin:$PATH"
+ eval "$(pyenv init --path)"
+ eval "$(pyenv init -)"
+ eval "$(pyenv virtualenv-init -)"
+ source ~/.bashrc
+
+
+
+ # RAGをつくるよ
+npm install dotenv openai
+npm install --save-dev typescript
+npm install dotenv
+
+
+
+
+# ファイルを実行
+typescript/配下に移動
+npm install @langchain/langgraph @langchain/community @langchain/anthropic @langchain/core
+npm install langchain chroma-js
+
+npm install
+npm run build
+
+

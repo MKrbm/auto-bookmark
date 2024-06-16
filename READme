@@ -1,0 +1,9 @@
+# ボタンを押したときの動作
+■typescript/main.tsを実行すると、python/scraped_docsの中のファイル(このfileがbookmarkからscrapingしたファイルを想定している)(今回は明示的にfilename = web_testを指定している)を読み込んで、ベクトル化します。
+■ベクトル化されたデータはtypescript/vectors/配下にfilename_vector.txtとして保存されます
+■filename_vector.txtは以下の通り作成した
+1行目→chunkのindex
+2行目→indexに対応するテキスト(改行は消した)
+3行目→textに対応するvector
+4行目→次のchunkのindex
+...
