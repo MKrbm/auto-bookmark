@@ -19,7 +19,7 @@ const llm = new OpenAI({
 // docsの作成 (json形式でscrapingしていると仮定)
 
 const filename = "web_test"
-const loader = new JSONLoader(`../python/scraped_docs/${filename}.json`); // bookmarkしたフォルダの内容をscrapingしたファイルを指定する
+const loader = new JSONLoader(`./scraped_docs/${filename}.json`); // bookmarkしたフォルダの内容をscrapingしたファイルを指定する
 const docs = await loader.load();
 
 
@@ -69,7 +69,7 @@ async function getEmbeddings(allSplits: { page_content: string }[]) {
   }
   const filePath = path.join(dir, `${filename}_vector.txt`)
 
-  let fileContent = '';
+  let fileContent = `${filename}\n\n`;
   textAndVectorList.forEach(({ index, text, vector }) => {
     // 表示
     // console.log(`Text: ${text}`);
