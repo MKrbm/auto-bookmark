@@ -38,8 +38,17 @@ const scrapeAndSave = async (urls: string[], outputFilePath: string) => {
     fs.writeFileSync(outputFilePath, JSON.stringify(documents));
     console.log('Scraping and saving completed.');
 };
-console.log(process.cwd());
-const urls = ['https://lilianweng.github.io/posts/2023-06-23-agent/'];
-const outputFilePath = './scraped_docs/web_test.json'; // 動的に変更する必要がある
 
-scrapeAndSave(urls, outputFilePath).catch(console.error);
+
+const main = async (urls: string[], outputFilePath: string) => {
+    console.log(process.cwd());
+    await scrapeAndSave(urls, outputFilePath);
+};
+
+
+export default main;
+if (import.meta.url === `file://${process.argv[1]}`) {
+    const urls = ['https://lilianweng.github.io/posts/2023-06-23-agent/']; // urlsとしているが、urlは一つの想定です。。
+    const outputFilePath = './scraped_docs/web_test.json'; // 動的に変更する必要がある
+    main(urls, outputFilePath).catch(console.error);
+}
