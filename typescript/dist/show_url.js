@@ -85,7 +85,7 @@ async function getTop10SimilarUrls(sentence, directory) {
     return top10.map(item => item.url);
 }
 // 使用例
-const sentence = "Your input sentence here";
+const sentence = "謎解き的な";
 const directory = "./vectors";
 getTop10SimilarUrls(sentence, directory).then(urls => {
     console.log("Top 10 similar URLs:", urls);
