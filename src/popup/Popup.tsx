@@ -1,12 +1,26 @@
-import { Counter } from '../app/features/counter';
+import { useEffect, useState } from 'react';
+import { Bookmarks } from '../app/features/bookmarks';
 
 const Popup = () => {
-  document.body.className = 'w-[30rem] h-[15rem]';
+  document.body.className = 'w-[25rem] h-[15rem]';
 
   return (
     <>
-      <div className="flex justify-center mt-2 text-base">Popup Counter</div>
-      <Counter />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          marginTop: '0.5rem',
+          fontSize: '1rem',
+          fontWeight: 'bold',
+          color: '#000',
+          alignItems: 'center',
+          textAlign: 'center',
+        }}
+      >
+        Auto-Bookmark
+      </div>
+      <Bookmarks />
     </>
   );
 };
