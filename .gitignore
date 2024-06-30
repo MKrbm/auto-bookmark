@@ -4,3 +4,15 @@
 
 # jorge
 /typescript/.env
+
+/typescript/node_modules
+
+/node_modules
+
+/typescript/vectors
+
+/typescript/scraped_docs
+
+
+
+
