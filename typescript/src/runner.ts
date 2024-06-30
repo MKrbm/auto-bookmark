@@ -18,7 +18,7 @@ const run = async () => {
     for (const url of urls_list) {
         const filename = urlToFilename(url);
         console.log('filename:', filename);
-        const outputFilePath = path.resolve('./scraped_docs', filename);
+        const outputFilePath = path.resolve('./scraped_docs', `${filename}.json`);
         await scrapeMain([url], outputFilePath);
         console.log('filename:', filename);
         await create_vectorsMain(filename) // ここで何かエラー起きているな
