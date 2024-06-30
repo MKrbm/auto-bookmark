@@ -13,12 +13,12 @@ const manifest = defineManifest(async (env) => ({
   background: {
     service_worker: 'background/index.ts',
   },
-  content_scripts: [
-    {
-      matches: ['http://*/*', 'https://*/*', 'file:///*'],
-      js: ['content/index.tsx'],
-    },
-  ],
+  // content_scripts: [
+  //   {
+  //     matches: ['http://*/*', 'https://*/*', 'file:///*'],
+  //     js: ['content/index.tsx'],
+  //   },
+  // ],
   host_permissions: ['<all_urls>'],
   options_ui: {
     page: 'options/options.html',
@@ -48,7 +48,7 @@ const manifest = defineManifest(async (env) => ({
     '48': 'images/extension_48.png',
     '128': 'images/extension_128.png',
   },
-  permissions: ['storage', 'tabs'],
+  permissions: ['storage', 'tabs', 'bookmarks'],
 }));
 
 export default manifest;

@@ -17,3 +17,14 @@ browser.runtime.onInstalled.addListener(async (details) => {
     await browser.tabs.create({ url });
   }
 });
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log('request', request);
+  if (request.action === 'fetchBookmarks') {
+    chrome.bookmarks.getTree((bookmarkTreeNodes) => {
+      // console.log("bookmarkTreeNodes", bookmarkTreeNodes);
+      sendResponse({ bookmarks: bookmarkTreeNodes });
+    });
+    return true; // Will respond asynchronously.
+  }
+});

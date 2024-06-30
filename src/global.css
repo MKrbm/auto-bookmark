@@ -3,3 +3,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.custom-scrollbar {
+  scrollbar-width: thin; /* For Firefox */
+  /* overflow-y: hidden; */
+  overflow-y: auto;
+  scrollbar-color: transparent transparent;
+  transition: 0.3s;
+  /* transition: overflow-y 0.3s ease;  */
+}
+.custom-scrollbar:hover {
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: gray transparent;
+  overflow-y: auto;
+}
+/* .custom-scrollbar:not(:hover) {
+  scrollbar-width: none; 
+} */
+/* 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px; 
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 4px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.5); 
+}  */
