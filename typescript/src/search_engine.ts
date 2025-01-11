@@ -51,6 +51,45 @@ function calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
 }
 
 /**
+ * Levenshtein Distance (編集距離) を計算するヘルパー関数
+ */
+function getEditDistance(a: string, b: string): number {
+  const dp: number[][] = [];
+  const lenA = a.length;
+  const lenB = b.length;
+
+  // dp配列の初期化
+  for (let i = 0; i <= lenA; i++) {
+    dp[i] = [];
+    for (let j = 0; j <= lenB; j++) {
+      dp[i][j] = 0;
+    }
+  }
+
+  // 初期条件
+  for (let i = 0; i <= lenA; i++) {
+    dp[i][0] = i; 
+  }
+  for (let j = 0; j <= lenB; j++) {
+    dp[0][j] = j;
+  }
+
+  // DPで編集距離を計算
+  for (let i = 1; i <= lenA; i++) {
+    for (let j = 1; j <= lenB; j++) {
+      const cost = a[i-1] === b[j-1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i-1][j] + 1,    // 削除
+        dp[i][j-1] + 1,    // 挿入
+        dp[i-1][j-1] + cost // 置換 (文字が同じならcost=0)
+      );
+    }
+  }
+  return dp[lenA][lenB];
+}
+
+
+/**
  * ある .txt ファイル（1つのURLに対応）をパースして
  *  - filename(URL整形版)
  *  - customTitle(ユーザーがつけたカスタムタイトル)
@@ -175,20 +214,21 @@ export async function ai_search(
   // 1) input 文 を ベクトル化
   const [embeddedInput] = await embeddingModel.embedDocuments([input]);
   
-  // 2) vectorsディレクトリのファイルを走査
+  // vectorsディレクトリ内のファイル一覧を取得
   const files = fs.readdirSync(directory).filter(f => f.endsWith(".txt"));
 
-  let topResults: Array<{
-    url: string;
-    title: string;
-    snippet: string;
-    similarity: number;
-  }> = [];
+  // 一時的に「ファイル単位での maxSimilarity と そのチャンク情報」を格納するマップ
+  // キー: filename(URL整形), 値: { title, snippet, similarity }
+  const fileBest: Record<string, { title: string; snippet: string; similarity: number }> = {};
 
   for (const file of files) {
     const filePath = path.join(directory, file);
     const { filename, customTitle, chunks } = parseVectorFile(filePath);
 
+    // 初期値として "similarity = -Infinity" などにしておく
+    let bestSimilarity = -Infinity;
+    let bestSnippet = "";
+    
     for (const chunk of chunks) {
       if (chunk.vector.length !== embeddedInput.length) {
         console.warn(`Skipping invalid dimension chunk in file: ${file}`);
@@ -196,20 +236,101 @@ export async function ai_search(
       }
       // コサイン類似度計算
       const similarity = calculateCosineSimilarity(embeddedInput, chunk.vector);
-      
-      // snippetは chunk.text全部 or 先頭100文字など適宜調整
-      const snippet = chunk.text.slice(0, 100);
 
-      topResults.push({
-        url: filename,
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestSnippet = chunk.text.slice(0, 100); // 先頭100文字など
+      }
+    }
+
+    // ファイル内で最も類似度が高い chunk を代表値としてセット
+    if (bestSimilarity > -Infinity) {
+      fileBest[filename] = {
         title: customTitle,
-        snippet,
-        similarity,
-      });
+        snippet: bestSnippet,
+        similarity: bestSimilarity,
+      };
     }
   }
 
-  // similarity 降順にソートして上位N件を返す
-  topResults.sort((a, b) => b.similarity - a.similarity);
-  return topResults.slice(0, topN);
+  // 2) fileBest の値たちを配列化して、similarity 降順にソート
+  const results = Object.entries(fileBest).map(([url, data]) => ({
+    url,
+    title: data.title,
+    snippet: data.snippet,
+    similarity: data.similarity,
+  }));
+  
+  // similarity 降順で sort
+  results.sort((a, b) => b.similarity - a.similarity);
+
+  // 上位 topN を返す
+  return results.slice(0, topN);
+}
+
+// =====================  fuzzyResults 関数  =====================
+/**
+ * fuzzyResults (簡易版)
+ * - input と各チャンク(の単語)との「編集距離(Levenshtein Distance)」を計算し、
+ *   一定の閾値以下であれば「曖昧一致」とみなす。
+ * - 曖昧一致したチャンクをリストアップし、distance 昇順で上位 n 件返す。
+ * 
+ * 【注意】本格的なFuzzy Searchには Fuse.jsなどのライブラリを使用するほうが良いです。
+ *         以下は概念実装です。
+ */
+export async function fuzzyResults(
+  input: string,
+  directory: string,
+  threshold: number = 3,  // どの程度までを "曖昧一致" とみなすか (小さいほど厳密)
+  topN: number = 10       // 返す上限数
+): Promise<Array<{
+  url: string;
+  title: string;
+  snippet: string;
+  distance: number; 
+}>> {
+  const files = fs.readdirSync(directory).filter(f => f.endsWith(".txt"));
+  const results: Array<{
+    url: string;
+    title: string;
+    snippet: string;
+    distance: number;
+  }> = [];
+
+  for (const file of files) {
+    const filePath = path.join(directory, file);
+    const { filename, customTitle, chunks } = parseVectorFile(filePath);
+
+    for (const chunk of chunks) {
+      // チャンク全文を単語に分割
+      const words = chunk.text.split(/\s+/);
+      
+      // 「最も近い単語の編集距離」を調べる
+      let minDistance = Infinity;
+      for (const word of words) {
+        const dist = getEditDistance(input.toLowerCase(), word.toLowerCase());
+        if (dist < minDistance) {
+          minDistance = dist;
+          // 完全一致なら早期終了しても良い
+          if (minDistance === 0) break;
+        }
+      }
+
+      // minDistance が閾値以下なら「曖昧一致」とみなす
+      if (minDistance <= threshold) {
+        // snippet はチャンク冒頭100文字を例示
+        const snippet = chunk.text.slice(0, 100);
+        results.push({
+          url: filename,
+          title: customTitle,
+          snippet,
+          distance: minDistance,
+        });
+      }
+    }
+  }
+
+  // distance (編集距離) 昇順に並べ、上位N件を返す
+  results.sort((a, b) => a.distance - b.distance);
+  return results.slice(0, topN);
 }
