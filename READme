@@ -1,9 +1,20 @@
-# ボタンを押したときの動作
-■typescript/main.tsを実行すると、python/scraped_docsの中のファイル(このfileがbookmarkからscrapingしたファイルを想定している)(今回は明示的にfilename = web_testを指定している)を読み込んで、ベクトル化します。
-■ベクトル化されたデータはtypescript/vectors/配下にfilename_vector.txtとして保存されます
-■filename_vector.txtは以下の通り作成した
-1行目→chunkのindex
-2行目→indexに対応するテキスト(改行は消した)
-3行目→textに対応するvector
-4行目→次のchunkのindex
-...
+■ vector化
+
+「typescript/vectors/<filname: URLの英数字以外を_に変更したもの>_vector.tex」として以下の内容が保存される
+
+1行目→ filename(URL的な)
+2行目 → タイトル (スクレイピングして、tilteに入れられている文字列ではなくて、のちに実装するユーザーがブックマークを作成するときに個人的に付けたタイトル)
+以下繰り返し
+3行目 → chunkのindex
+4行目→ indexに対応するテキスト
+5行目→ textに対応するvector
+
+- 具体例
+
+https___squash_or_jp_game_
+
+Chunk Index: 0
+Text:
+大会情報｜JSA | 公益社団法人日本スカッシュ協会 Official Web Site大会情報  |  公益社団法人 日本スカッシュ協会
+Vector:
+[[0.03195807,0.02774478,-0.01581295,0.06052453,0.012902109,-0.028671354,0.062412642,0.032272756, …
