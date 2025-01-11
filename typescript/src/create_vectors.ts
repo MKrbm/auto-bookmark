@@ -1,3 +1,9 @@
+// ■ create_vectors.ts
+
+// runner.ts から受け取ったファイル名( = URLを整形したもの )を使って、scraped_docs/filename.json を読み込みます。
+// langchain の JSONLoader + RecursiveCharacterTextSplitter を用いて、ある程度の長さに分割します。
+// 文字列を OpenAIEmbeddings でEmbedding(数値ベクトル)にし、最終的に vectors ディレクトリ配下に filename_vector.txt として出力します。
+
 import { OpenAI } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
@@ -55,7 +61,7 @@ async function getEmbeddings(allSplits: { page_content: string }[], filename: st
   const textAndVectorList = allSplits.map((chunk, index) => ({
     index: index,
     // text: chunk.page_content,
-    text: chunk.page_content.replace(/\n/g, ' '), // 改行なくしてみた
+    text: chunk.page_content.replace(/\n/g, ' '), 
     vector: embeddings[index],
   }));
 
@@ -66,7 +72,7 @@ async function getEmbeddings(allSplits: { page_content: string }[], filename: st
   }
   const filePath = path.join(dir, `${filename}_vector.txt`)
 
-  let fileContent = `${filename}\n\n`;
+  let fileContent = `${filename}\nここに、user指定のtilteが入る予定\n`;
   textAndVectorList.forEach(({ index, text, vector }) => {
     // 表示
     // console.log(`Text: ${text}`);

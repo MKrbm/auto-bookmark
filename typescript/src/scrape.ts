@@ -1,3 +1,8 @@
+// scrape.ts
+
+// URLを受け取り、axios + cheerioを使ってHTML本文を取得し、タイトルや本文をパースします。
+// パースしたテキスト(page_content)とメタデータ(url, title)を documents 配列に格納して、最終的に outputFilePath にJSON形式で保存します。
+
 import axios from 'axios';
 import cheerio from 'cheerio';
 import fs from 'fs';

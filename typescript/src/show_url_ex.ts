@@ -1,3 +1,8 @@
+// ■ show_url_ex.ts
+
+// vectors/xxxx_vector.txt からベクトル情報を読み込み、ユーザーが入力した文字列に対してコサイン類似度でランキングします。
+// 上位10件のURLを返す例が書かれています。
+
 import { OpenAI } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { MemoryVectorStore } from "langchain/vectorstores/memory";
