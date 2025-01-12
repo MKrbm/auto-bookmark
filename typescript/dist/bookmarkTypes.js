@@ -1,0 +1,2 @@
+// bookmarkTypes.ts
+export {};

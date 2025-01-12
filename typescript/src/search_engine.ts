@@ -151,54 +151,84 @@ function parseVectorFile(filePath: string) {
   };
 }
 
-// =====================  exact_search 関数  =====================
+// --- exact_search ----------------------------------------------------
+
 /**
  * exact_search
- * - input文を完全一致で検索（テキスト or customTitle が match するか）
- * - matchした場合、URL / タイトル / マッチした文字列(あるいはテキスト前後) などを返す
+ * - input文を完全一致(includes)で検索
+ * - **同じファイル内で複数ヒットしても、1件にまとめて返す**ようにする
  * 
  * @param input 検索文字列
  * @param directory vectorsディレクトリ
- * @returns  { url, title, matchedString }[] のリスト
+ * @returns 
+ *   {
+ *     url: string;
+ *     title: string;
+ *     matchedStrings: string[];  // 同ファイル内の複数ヒットをまとめる
+ *   }[]
  */
 export async function exact_search(
   input: string,
   directory: string
-): Promise<Array<{ url: string; title: string; matchedString: string }>> {
+): Promise<Array<{ url: string; title: string; matchedStrings: string[] }>> {
   const files = fs.readdirSync(directory).filter(f => f.endsWith(".txt"));
-  const results: Array<{ url: string; title: string; matchedString: string }> = [];
   
+  // ここでは 'url' (filename) をキーとするオブジェクトを作り、
+  // 同じURLなら matchedStrings[] に追記して1件にまとめる
+  const resultsMap: Record<string, {
+    title: string;
+    matchedStrings: Set<string>; // 重複防止のためSetにする
+  }> = {};
+
   for (const file of files) {
     const filePath = path.join(directory, file);
     const { filename, customTitle, chunks } = parseVectorFile(filePath);
 
-    // 1) タイトルが完全一致する場合
+    let foundAny = false;
+    let matchedSet = new Set<string>();
+
+    // 1) まずタイトルが完全一致するかチェック
     if (customTitle === input) {
-      results.push({
-        url: filename,
-        title: customTitle,
-        matchedString: customTitle, // タイトル全文をそのまま返す例
-      });
-      // 要件次第で「タイトル合致したらチャンク検索せずに continue」でもOK
+      matchedSet.add(customTitle);
+      foundAny = true;
     }
 
-    // 2) 各 chunk text に対して exact match (inputを含むかどうか)
+    // 2) 各 chunk text に対して exact match
     for (const chunk of chunks) {
       if (chunk.text.includes(input)) {
-        // 前後文脈を抜き出したい場合は substring や slice で調整可
-        // 例: 前後30文字を抜粋するなど
-        const matchedString = input;
-        results.push({
-          url: filename,
+        matchedSet.add(input);
+        foundAny = true;
+      }
+    }
+
+    // 3) もし一つでもマッチがあれば resultsMap に登録
+    if (foundAny) {
+      // 既に resultsMap に同じURLがあれば title の上書き or 追記
+      if (!resultsMap[filename]) {
+        resultsMap[filename] = {
           title: customTitle,
-          matchedString,
-        });
+          matchedStrings: matchedSet,
+        };
+      } else {
+        // もし同じファイルを再度マッチした場合、matchedStrings を合成
+        for (const m of matchedSet) {
+          resultsMap[filename].matchedStrings.add(m);
+        }
       }
     }
   }
 
-  return results;
+  // 4) 結果を配列化して返す
+  const resultArray = Object.entries(resultsMap).map(([url, data]) => ({
+    url,
+    title: data.title,
+    matchedStrings: Array.from(data.matchedStrings), // Set -> 配列に変換
+  }));
+
+  // 必要に応じてソートなど行う
+  return resultArray;
 }
+
 
 // =====================  ai_search 関数  =====================
 /**
@@ -272,8 +302,8 @@ export async function ai_search(
 /**
  * fuzzyResults (簡易版)
  * - input と各チャンク(の単語)との「編集距離(Levenshtein Distance)」を計算し、
- *   一定の閾値以下であれば「曖昧一致」とみなす。
- * - 曖昧一致したチャンクをリストアップし、distance 昇順で上位 n 件返す。
+ *   ファイル内で最小のdistanceを記録(= 最も曖昧一致が高いチャンク) として扱う。
+ * - 全ファイルを通して distance 昇順に並べ、上位n件返す。
  * 
  * 【注意】本格的なFuzzy Searchには Fuse.jsなどのライブラリを使用するほうが良いです。
  *         以下は概念実装です。
@@ -281,7 +311,7 @@ export async function ai_search(
 export async function fuzzyResults(
   input: string,
   directory: string,
-  threshold: number = 3,  // どの程度までを "曖昧一致" とみなすか (小さいほど厳密)
+  threshold: number = 3,  // どの程度までを "曖昧一致" とみなすか
   topN: number = 10       // 返す上限数
 ): Promise<Array<{
   url: string;
@@ -289,48 +319,65 @@ export async function fuzzyResults(
   snippet: string;
   distance: number; 
 }>> {
+  // 1) vectors ディレクトリ内の .txt ファイルを取得
   const files = fs.readdirSync(directory).filter(f => f.endsWith(".txt"));
-  const results: Array<{
-    url: string;
+
+  // 2) ファイル単位で「最小distance」を格納するマップ
+  //    { [filename]: { title, snippet, distance } }
+  const fileBest: Record<string, {
     title: string;
     snippet: string;
     distance: number;
-  }> = [];
+  }> = {};
 
   for (const file of files) {
     const filePath = path.join(directory, file);
     const { filename, customTitle, chunks } = parseVectorFile(filePath);
 
+    // このファイル(=URL) における "最小distance" とその snippet
+    let bestDistance = Infinity;
+    let bestSnippet = "";
+
+    // 3) 各チャンクに対して
     for (const chunk of chunks) {
       // チャンク全文を単語に分割
       const words = chunk.text.split(/\s+/);
       
       // 「最も近い単語の編集距離」を調べる
-      let minDistance = Infinity;
+      let minDistanceInChunk = Infinity;
       for (const word of words) {
         const dist = getEditDistance(input.toLowerCase(), word.toLowerCase());
-        if (dist < minDistance) {
-          minDistance = dist;
-          // 完全一致なら早期終了しても良い
-          if (minDistance === 0) break;
+        if (dist < minDistanceInChunk) {
+          minDistanceInChunk = dist;
+          if (minDistanceInChunk === 0) break; // 完全一致なら早期終了
         }
       }
 
-      // minDistance が閾値以下なら「曖昧一致」とみなす
-      if (minDistance <= threshold) {
-        // snippet はチャンク冒頭100文字を例示
-        const snippet = chunk.text.slice(0, 100);
-        results.push({
-          url: filename,
-          title: customTitle,
-          snippet,
-          distance: minDistance,
-        });
+      // もしこのチャンクの最小distanceが従来の bestDistance より小さければ更新
+      if (minDistanceInChunk < bestDistance) {
+        bestDistance = minDistanceInChunk;
+        bestSnippet = chunk.text.slice(0, 100); // 先頭100文字
       }
+    }
+
+    // 4) 閾値以下なら「曖昧一致がある」とみなして登録
+    if (bestDistance <= threshold && bestDistance < Infinity) {
+      fileBest[filename] = {
+        title: customTitle,
+        snippet: bestSnippet,
+        distance: bestDistance,
+      };
     }
   }
 
-  // distance (編集距離) 昇順に並べ、上位N件を返す
+  // 5) fileBest を配列化 & distance 昇順で並べ、上位 n件を返す
+  const results = Object.entries(fileBest).map(([url, data]) => ({
+    url,
+    title: data.title,
+    snippet: data.snippet,
+    distance: data.distance,
+  }));
+
   results.sort((a, b) => a.distance - b.distance);
   return results.slice(0, topN);
 }
