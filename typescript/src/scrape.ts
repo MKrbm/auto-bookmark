@@ -1,13 +1,7 @@
 // scrape.ts
 
-// URLを受け取り、axios + cheerioを使ってHTML本文を取得し、タイトルや本文をパースします。
-// パースしたテキスト(page_content)とメタデータ(url, title, userTitle)を documents 配列に格納して
-// 最終的に outputFilePath に JSON形式で保存します。
-
 import axios from 'axios';
 import cheerio from 'cheerio';
-import fs from 'fs';
-import path from 'path';
 
 interface Document {
   page_content: string;
@@ -18,11 +12,15 @@ interface Document {
   };
 }
 
-const scrapeAndSave = async (
+/**
+ * scrapeMain
+ * - urls & userTitle を受け取り、HTMLを取得してテキスト抽出
+ * - それらを Document[] で返す（ファイルには保存しない）
+ */
+export default async function scrapeMain(
   urls: string[],
-  userTitle: string,
-  outputFilePath: string
-) => {
+  userTitle: string
+): Promise<Document[]> {
   const documents: Document[] = [];
 
   for (const url of urls) {
@@ -44,13 +42,12 @@ const scrapeAndSave = async (
 
       // 4) 何らかのテキストが取得できた場合のみ追加
       if (postTitle || postHeader || postContent) {
-        const pageContent = `${postTitle}\n${postHeader}\n${postContent}`;
+        const pageContent = `${postTitle}\n${postHeader}\n${postContent}`.trim();
         const metadata = {
-          url: url,
-          title: $('title').text(),  // HTMLの<title>タグから取ったもの
-          userTitle: userTitle       // ユーザー指定のタイトル
+          url,
+          title: $('title').text(),
+          userTitle
         };
-
         documents.push({ page_content: pageContent, metadata });
       } else {
         console.warn(`No content found for ${url}.`);
@@ -61,30 +58,5 @@ const scrapeAndSave = async (
     }
   }
 
-  // 5) 出力先ディレクトリがなければ作成
-  const outputDir = path.dirname(outputFilePath);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
-  }
-
-  // 6) JSONファイルとして保存
-  fs.writeFileSync(outputFilePath, JSON.stringify(documents, null, 2));
-  console.log('Scraping and saving completed.');
-};
-
-// main関数 (urls, userTitle, outputFilePath)
-const main = async (urls: string[], userTitle: string, outputFilePath: string) => {
-  await scrapeAndSave(urls, userTitle, outputFilePath);
-};
-
-export default main;
-
-// 単体テスト用のエントリポイント例
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const urls = ['https://www.langchain.com/'];
-  const userTitle = "LangChainのサイト";  // テスト用タイトル
-  const outputFilePath = './scraped_docs/web_test.json';
-
-  main(urls, userTitle, outputFilePath).catch(console.error);
+  return documents; // メモリ上で返す
 }
-

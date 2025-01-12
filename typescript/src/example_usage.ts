@@ -1,15 +1,15 @@
-// someModule.ts
+// example_usage.ts
+
 import { processBookmarks } from './runnerBookmarks.js';
 import { Bookmark } from './bookmarkTypes.js';
 
 (async () => {
-  // 例: Bookmark配列を用意
   const bookmarks: Bookmark[] = [
     {
       id: "287",
       path: {
-        segments: ["directoryPath1_example1", "directoryPath2_example1", "userTitle_example1"],
-        name: "userTitle_example1"
+        segments: ["Bookmarks Bar", "cameras", "光と絵の具の三原色（色とは何か）"],
+        name: "光と絵の具の三原色（色とは何か）"
       },
       url: "https://squash.or.jp/game/"
     },
@@ -21,9 +21,8 @@ import { Bookmark } from './bookmarkTypes.js';
       },
       url: "https://www.langchain.com/"
     }
-    // ... 例はこれだけだが、本来はもっとたくさんある
+    // ... 他Bookmark
   ];
 
-  // 処理を実行
   await processBookmarks(bookmarks);
 })();
