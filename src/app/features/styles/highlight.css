@@ -2,10 +2,10 @@
 
 /* By default, do NOT highlight the matched text. */
 .highlighted {
-    background-color: transparent;
+    background-color: yellow;
 }
 
 /* Only highlight matched text when hovering over the link. */
-.title-link:hover .highlighted {
+/* .title-link:hover .highlighted {
     background-color: yellow;
-}
+} */

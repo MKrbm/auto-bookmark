@@ -1,47 +1,42 @@
 // BookmarksList.tsx
-// Renders a list of bookmarks and highlights matching text on hover.
-
 import React from 'react';
 import { Bookmark } from '../lib/types';
-
-/**
- * This helper inserts <span className="highlighted"> around matched text.
- * We'll pair this with hover-based CSS highlighting.
- */
-function highlightMatches(text: string, query: string): React.ReactNode {
-    if (!query) return text; // no search term, return unaltered
-
-    // Escape regex special chars if needed, or keep it simple if not
-    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-    // Split text by the matching query; wrap matches in <span>
-    return text.split(regex).map((part, idx) =>
-        part.toLowerCase() === query.toLowerCase()
-            ? <span key={idx} className="highlighted">{part}</span>
-            : part
-    );
-}
+import { highlightMatches, SearchMode } from '../lib/HighlightMatches';
 
 interface BookmarksListProps {
     bookmarks: Bookmark[];
     searchTerm: string;
+    // Let’s say we pass in a search mode from the parent for demonstration
+    searchMode?: SearchMode;
 }
 
-export const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, searchTerm }) => {
+export const BookmarksList: React.FC<BookmarksListProps> = ({
+    bookmarks,
+    searchTerm,
+    searchMode = 'exact', // default to "exact"
+}) => {
     return (
         <ul
             className="list-disc"
             style={{
                 paddingLeft: '1rem',
-                backgroundColor: 'yellow',
+                backgroundColor: 'orange',
             }}
         >
             {bookmarks.map((bookmark) => {
-                // Convert the entire Path to a string for display
-                const fullPath = bookmark.path.toString();
-                // Insert highlight spans around matched text
-                const highlightedPath = highlightMatches(fullPath, searchTerm);
+                // For now, we’re just searching the name. 
+                // Or you could use the entire path: `bookmark.path.toString()`
+                const name = bookmark.path.name;
+
+                // 1) Call highlightMatches, which now returns a “HighlightResult” object
+                const highlightResult = highlightMatches(name, searchTerm, searchMode);
+
+                // 2) Grab whatever fields you need
+                //    highlightResult.highlightedString
+                //    highlightResult.title
+                //    highlightResult.matchedText
+                //    highlightResult.context
+                const { highlightedString, matchedText, context } = highlightResult;
 
                 return (
                     <li key={bookmark.id} className="pb-2">
@@ -51,8 +46,18 @@ export const BookmarksList: React.FC<BookmarksListProps> = ({ bookmarks, searchT
                             rel="noopener noreferrer"
                             className="title-link"
                         >
-                            {highlightedPath}
+                            {highlightedString}
                         </a>
+                        {searchMode !== 'ai' && matchedText && (
+                            <div style={{ fontSize: '0.8rem', color: 'gray' }}>
+                                Matched Text: {matchedText}
+                            </div>
+                        )}
+                        {searchMode === 'ai' && (
+                            <div style={{ fontSize: '0.8rem', color: 'gray' }}>
+                                Context: {context}
+                            </div>
+                        )}
                     </li>
                 );
             })}

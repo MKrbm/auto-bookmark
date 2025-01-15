@@ -21,7 +21,7 @@ export const Bookmarks: React.FC = () => {
     });
   };
 
-  // Optionally call fetchBookmarks on mount
+  //TODO: Optionally call fetchBookmarks on mount. Uncomment this when ready.
   // useEffect(() => {
   //   fetchBookmarks();
   // }, []);
