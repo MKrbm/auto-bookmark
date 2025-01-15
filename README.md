@@ -1,158 +1,94 @@
-<!-- <div align="center">
-  <br>
- <img src="https://raw.githubusercontent.com/sinanbekar/browser-extension-react-typescript-starter/main/public/images/extension_128.png" alt="Browser Extension React & TypeScript Starter" width="128">
-  <br>
-  <h2>
-    Browser Extension <br>
-    React & TypeScript Starter
-    <br>
-  </h2>
+# Chrome Extension Starter with Vite, React, TypeScript, and Tailwind CSS
+This project is a starter template for building modern Chrome extensions using Vite, React, TypeScript, and Tailwind CSS. It simplifies the setup so you can focus on building your extension's features.
+
+<div style="display: flex; justify-content: space-around">
+  <img src="https://github.com/user-attachments/assets/b2267b19-1618-4797-8e0e-a241697b92cf" alt="image 1" width="200"/>
+  <img src="https://github.com/user-attachments/assets/eb6304c9-afd7-4bfc-b9ce-8099531a66d9" alt="image 2" width="200"/>
+  <img src="https://github.com/user-attachments/assets/7808d29d-d1ca-4287-b82b-183ad7b6510a" alt="image 3" width="200"/>
+  <img src="https://github.com/user-attachments/assets/c2f328e2-f7d6-4e6d-a3ec-8e750625e0f8" alt="image 4" width="200"/>
 </div>
 
-<p align="center">A cross-platform (Chrome, Firefox, Edge, Opera, Brave) web browser extension (Manifest V3 and Manifest V2) starter kit with hot reload support, built with React, Typescript, Redux, Vite, ESLint, Prettier, TailwindCSS, Jest and more! </p>
-<hr />
-
-<div align="center" >
-  <a href="https://github.com/sinanbekar/browser-extension-react-typescript-starter/actions">
-    <img src="https://github.com/sinanbekar/browser-extension-react-typescript-starter/actions/workflows/ci.yml/badge.svg" alt="CI">
+## View tutorial on YouTube
+ <a href="https://www.youtube.com/watch?v=jwDErziR1nE">
+    <img src="http://i.ytimg.com/vi/jwDErziR1nE/hqdefault.jpg" alt="YouTube video" width="200"/>
   </a>
-    &nbsp;
-  <a>
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome">
-  </a>
-    &nbsp;
-  <a href="https://github.com/sinanbekar/browser-extension-react-typescript-starter/blob/main/LICENSE">
-    <img src="https://img.shields.io/apm/l/atomic-design-ui.svg" alt="MIT License">
-  </a>
-
-</div>
-
-<p align="center">
-  <a href="#features">Features</a> ·
-  <a href="#quick-start">Quick Start</a> ·
-  <a href="#important-notes">Important Notes</a> ·
-  <a href="#license">License</a>
-</p>
-
-> 🚀 **NEW** (experimental) Zustand for state management instead Redux, with [`webext-zustand`](https://github.com/sinanbekar/webext-zustand) package. You can try it now on the branch [`experimental-zustand`](https://github.com/sinanbekar/browser-extension-react-typescript-starter/tree/experimental-zustand) -->
 
 ## Features
+- **Fast reloading** develop UI faster, view the popup and options page
+- **Vite** for fast bundling and development
+- **React** for building interactive UI components
+- **TypeScript** for type-safe JavaScript development
+- **Tailwind CSS** for easy and responsive styling
+- **chrome-types** Chrome's API TS files for auto-completion 
 
-- **Instant HMR** (hot reload)[^1]
-- Write once run on any browser
-- Global Redux support with persist option. Effortless communication between content, background, popup, options, and more pages.
-- Provides a basic content example and popup, options, and welcome pages with all React
-- Latest Manifest V3 support
-- Manifest V2 support (beta)
-- Dynamic manifest.json
-- Includes ESLint configured to work with TypeScript and Prettier
-- Includes tests with Jest
+## Installation
 
-#### Built with
-
-- React
-- TypeScript
-- Redux (toolkit and redux-persist)
-- TailwindCSS
-- Vite
-- Jest
-- ESLint
-- Prettier
-- simple-git-hooks (lightweight husky alternative)
-- nano-staged
-
-[^1]: While it is fully supported and stable in most cases, hard reloading is rarely recommended.
-
-<!-- ## Browser Support
-
-| [![Chrome](https://raw.github.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png)](/) | [![Firefox](https://raw.github.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png)](/) | [![Edge](https://raw.github.com/alrra/browser-logos/master/src/edge/edge_48x48.png)](/) | [![Opera](https://raw.github.com/alrra/browser-logos/master/src/opera/opera_48x48.png)](/) | [![Brave](https://raw.github.com/alrra/browser-logos/master/src/brave/brave_48x48.png)](/) |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| ✔                                                                                             | ✔ (Beta)                                                                                         | ✔                                                                                       | ✔                                                                                          | ✔                                                                                          | -->
-
-## Quick Start
-
-- Ensure you have
-
-  - [Node.js](https://nodejs.org) 16 or later installed
-  - [Yarn](https://yarnpkg.com) installed
-
-- Install library
-
-  - `yarn install`
-
-- Run the development server
-
-  - `yarn dev`
-
-- To run your extension, go to `chrome://extensions`, enable `Developer Mode`, click `Load Unpacked Extension`, and select the `dist` folder.
-  - The edit take effect in real-time.
-
-<!-- ### Use the Template
-
-#### GitHub Template
-
-[Create a repo from this template on GitHub](https://github.com/sinanbekar/browser-extension-react-typescript-starter/generate).
-
-**_or_**
-
-#### Clone to local
-
-If you prefer to do it manually with the cleaner git history
-
-> **Note** If you don't have yarn installed, run: npm install -g yarn
-
-```bash
-npx degit sinanbekar/browser-extension-react-typescript-starter my-web-extension
-cd my-web-extension
-git init
+### Clone this repository:
 ```
+git clone https://github.com/omribarmats/chrome-extension-starter.git new-project
+```
+* Replace `new-project` with your project name
 
-Then run the following:
+### Open the new directory:
+```
+cd new-project
+```
+### Install dependencies:
+```
+npm install
+```
+### Start the development server:
+```
+npm run dev
+```
+## Load the Extension
 
-- `yarn install` to install dependencies.
-- `yarn dev` to start the development server.
-- `yarn build` to build an unpacked extension.
+1. Run the build command: `npm run build.`
+2. Go to `chrome://extensions/` in your Chrome browser.
+3. Enable `Developer mode`.
+4. Click `Load unpacked` and select the `dist` folder from the project.
 
-- **Load extension in Chrome (Chromium, Manifest V3)**
+## Development
+- Hot-reload enabled for easier development.
+- Modify your code in the src folder.
+- Tailwind CSS is already configured and ready to use.
+- Run `nmp run build` to implement changes to `dist` folder
+- Go on `chrome://extensions/` and click refresh `⟳`
 
-  - Go to the browser address bar and type `chrome://extensions`
-  - Check the `Developer Mode` button to enable it.
-  - Click on the `Load Unpacked Extension` button.
-  - Select your `dist` folder in the project root.
+### How to change the popup? 
+- Go on `src/chrome-extension/popup/index.tsx`
+- Once changes are made open the terminal and run `nmp run build` then visit `chrome://extensions/` and click the refresh `⟳` button on your extension
 
-- **Load extension in Firefox (Manifest V2)**
+### How to change the options page? 
+- Go on `src/chrome-extension/options/index.tsx`
+- Once changes are made open the terminal and run `nmp run build` then visit `chrome://extensions/` and click the refresh `⟳` button on your extension
 
-  - Go to the browser address bar and type `about://debugger`
-  - Click on the `Load Temporary Add-on` button.
-  - Select your `dist-firefox-v2` folder in the project root.
-
-### Available Commands
-
-- `yarn clean` to remove dist folder. `dev` and `build` commands call this command.
-- `yarn format` to fix code with eslint and prettier.
-- `yarn lint` to call ESLint and Prettier.
-- `yarn test` for testing.
-
-### Redux
-
-You can use redux (redux-toolkit) as state manager between popup, background, content and custom pages. Read the documentation for more.
-
-#### [@eduardoac-skimlinks/webext-redux](https://github.com/eduardoacskimlinks/webext-redux)
-
-### Bundling
-
-#### [@crxjs/vite-plugin](https://github.com/crxjs/chrome-extension-tools)
-
-> **Note** This plugin powers the development side of this starter.
->
-> docs: https://crxjs.dev/vite-plugin
->
-> Special thanks to [@jacksteamdev](https://github.com/jacksteamdev) and contributors for this amazing plugin.
+- ### How to add a background script? 
+- Create a `background.ts` file inside the `src` folder
+- Go on `vite.config.ts` and add this line `background: resolve(__dirname, "src/background.ts"),` under `build.rollupOptions.input`
+- For example 
+```
+ build: {
+    rollupOptions: {
+      input: {
+        popup: resolve(__dirname, "popup.html"),
+        options: resolve(__dirname, "options.html"),
+        background: resolve(__dirname, "src/background.ts"),
+      },
+      output: {
+        entryFileNames: "[name].js",
+      },
+    },
+  },
+```
+- Go on `manifest.json` and add this code:
+```
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+``` 
+- Open the terminal and run `nmp run build` then visit `chrome://extensions/` and click the refresh `⟳` button on your extension
 
 ## Contributing
-
-This repository is following the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) standard.
-
-## License
-
-MIT © [Sinan Bekar](https://sinan.engineer) -->
+Feel free to fork the project and make improvements or submit bug reports or issues.

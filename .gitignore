@@ -1,7 +1,6 @@
 .env
 .mypy_cache
 
-
 # Logs
 logs
 *.log
@@ -27,3 +26,4 @@ dist-firefox-v2
 *.njsproj
 *.sln
 *.sw?
+*.tmp

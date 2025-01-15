@@ -19,35 +19,47 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 ENV TZ=Asia/Tokyo
-ENV NVM_DIR /home/${USERNAME}/.nvm
-ENV NODE_VERSION 18
+
+# We’ll install Node 18 via NVM, but you can adjust if needed
+ENV NODE_VERSION=18
+
+# Conda-based PATH, if needed
 ENV PATH=/home/${USERNAME}/miniconda3/bin:$PATH
 ENV PATH=/home/${USERNAME}/miniconda3/condabin:$PATH
+
+# For X11 forwarding in some dev environments
 ENV DISPLAY host.docker.internal:0.0
 
 USER ${USERNAME}
 
+# Create NVM_DIR in home directory
+ENV NVM_DIR=/home/${USERNAME}/.nvm
 
-# Download and run the NVM installation script
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+# Install NVM, Node, and Yarn in one go
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash \
+    && . "$NVM_DIR/nvm.sh" \
+    && nvm install $NODE_VERSION \
+    && nvm use $NODE_VERSION \
+    && npm install --global yarn
 
-# Add NVM to the user's bash profile
-RUN echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"' >> ~/.bashrc && \
-    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.bashrc
+# Ensure NVM and Yarn are available in any new shell
+RUN echo 'export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"' >> ~/.bashrc \
+    && echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" ' >> ~/.bashrc \
+    && echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion" ' >> ~/.bashrc
 
-
-# Set the working directory to the user's home directory
+# Set the working directory
 WORKDIR /home/${USERNAME}
 
+# Switch back to root to copy entrypoint and adjust permissions
 USER root
+
 COPY entrypoint.sh /entrypoint.sh
 COPY terminal-colors-branch.sh /tmp/
 
-# # Ensure the entrypoint script is executable
+# Make entrypoint executable
 RUN chmod +x /entrypoint.sh
 
-# # Set the entrypoint to initialize the environment
+
+# Final Entrypoint + CMD
 ENTRYPOINT ["/entrypoint.sh", "/bin/sh", "-c"]
 CMD ["bash"]
-
-# # Be sure to use root user at the end of the dockerfile. 
