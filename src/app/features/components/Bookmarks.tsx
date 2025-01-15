@@ -22,9 +22,9 @@ export const Bookmarks: React.FC = () => {
   };
 
   // Optionally call fetchBookmarks on mount
-  useEffect(() => {
-    fetchBookmarks();
-  }, []);
+  // useEffect(() => {
+  //   fetchBookmarks();
+  // }, []);
 
   // Filter the bookmarks by matching the searchTerm in the entire path
   const filteredBookmarks = Object.values(bookmarks).filter((bookmark) =>

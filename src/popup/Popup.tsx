@@ -9,7 +9,7 @@ const Popup = () => {
   return (
     <div className="h-full bg-gray-100">
       <h1 className="text-xl font-bold text-center bg-red-50 mb-4">
-        Auto-Bookmark3
+        Auto-Bookmark
       </h1>
       <Bookmarks/>
     </div>

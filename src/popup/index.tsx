@@ -21,6 +21,7 @@ import { createRoot } from "react-dom/client";
 // import { Popup } from "./Popup";
 import Popup from "./Popup";
 import '../app/features/styles/highlight.css';
+import '../global.css';
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
