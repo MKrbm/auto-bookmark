@@ -6,6 +6,7 @@ export interface Path {
 
     /** Returns a /-delimited string of all segments. */
     toString(): string;
+    parents(): Path;
 
     /**
      * Returns the last segment (similar to Python's Path.name).
@@ -25,8 +26,15 @@ export function createPath(segments: string[]): Path {
             return segments.length > 0 ? segments[segments.length - 1] : '';
         },
 
-        toString() {
-            return segments.join('/');
+        toString(includeRoot: boolean = false) {
+            return includeRoot ? segments.join('/') : segments.slice(1).join('/');
+        },
+
+        parents() {
+            if (segments.length === 0) {
+                return createPath([]);
+            }
+            return createPath(segments.slice(0, -1));
         },
     };
 }

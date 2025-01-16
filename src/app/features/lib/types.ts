@@ -14,4 +14,5 @@ export interface Bookmark {
     id: string;
     path: Path;
     url: string;
+    searchString: string;
 }

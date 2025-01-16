@@ -2,10 +2,64 @@
 
 /* By default, do NOT highlight the matched text. */
 .highlighted {
-    background-color: yellow;
+    background-color: rgba(101, 101, 216, 0.675);
+}
+
+.bookmark-item {
+    background-color: transparent;
+    padding: 0.2rem 0.5rem;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.bookmark-item:hover {
+    background-color: rgb(149, 131, 131);
 }
 
 /* Only highlight matched text when hovering over the link. */
 /* .title-link:hover .highlighted {
     background-color: yellow;
 } */
+
+.folder-badge {
+    display: inline-block;
+    /* Place it slightly to the side of the title */
+    margin-left: 0.5rem;
+    /* Some padding inside the badge */
+    padding: 0.2rem 0.5rem;
+    /* Rounded corners (or pill shape) */
+    border-radius: 9999px;
+    /* Subtle border */
+    border: 1px solid #ccc;
+    /* Light background color */
+    background-color: #f8f8f8;
+    /* Slightly smaller text */
+    font-size: 0.85rem;
+    /* Text color */
+    color: #555;
+    /* Cursor can remain default or pointer if it's clickable */
+    cursor: default;
+    /* Add a little breathing room */
+    line-height: 1.0;
+    /* Transition for hover effect */
+    transition: background-color 0.1s ease, color 0.3s ease;
+    font-weight: normal;
+    font-family: Arial, sans-serif;
+}
+
+/* Optional: Add a little folder icon before the text */
+.folder-badge::before {
+    content: '📁 ';
+    /* or try 🚩, 🔖, or an SVG background icon */
+}
+
+/* Hover effect: change background and text color a bit */
+.bookmark-item:hover .folder-badge {
+    background-color: #666;
+    color: #fff;
+}
+
+.bookmark-item .folder-badge {
+    cursor: pointer;
+}

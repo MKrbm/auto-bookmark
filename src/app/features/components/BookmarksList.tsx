@@ -1,64 +1,64 @@
 // BookmarksList.tsx
+// Renders a list of bookmarks and highlights matching text on hover.
+
 import React from 'react';
-import { Bookmark } from '../lib/types';
-import { highlightMatches, SearchMode } from '../lib/HighlightMatches';
+import { SearchMode, SearchResultItem } from '../search/baseSearchEngine';
 
 interface BookmarksListProps {
-    bookmarks: Bookmark[];
+    searchResults: SearchResultItem[];
     searchTerm: string;
-    // Let’s say we pass in a search mode from the parent for demonstration
-    searchMode?: SearchMode;
+    searchMode?: SearchMode; // 'exact', 'fuzzy', or 'ai'
 }
 
 export const BookmarksList: React.FC<BookmarksListProps> = ({
-    bookmarks,
+    searchResults,
     searchTerm,
-    searchMode = 'exact', // default to "exact"
+    searchMode = 'exact',
 }) => {
     return (
         <ul
             className="list-disc"
             style={{
-                paddingLeft: '1rem',
-                backgroundColor: 'orange',
+                // paddingLeft: '1rem',
+                // backgroundColor: 'orange',
             }}
         >
-            {bookmarks.map((bookmark) => {
-                // For now, we’re just searching the name. 
-                // Or you could use the entire path: `bookmark.path.toString()`
-                const name = bookmark.path.name;
-
-                // 1) Call highlightMatches, which now returns a “HighlightResult” object
-                const highlightResult = highlightMatches(name, searchTerm, searchMode);
-
-                // 2) Grab whatever fields you need
-                //    highlightResult.highlightedString
-                //    highlightResult.title
-                //    highlightResult.matchedText
-                //    highlightResult.context
-                const { highlightedString, matchedText, context } = highlightResult;
-
+            {searchResults.map((searchResult) => {
+                // For example, we always highlight the "name" field 
+                // (since user has already pre-filtered by name vs. path in Bookmarks.tsx).
                 return (
-                    <li key={bookmark.id} className="pb-2">
+                    <li key={searchResult.original.id} className="bookmark-item">
                         <a
-                            href={bookmark.url}
+                            href={searchResult.original.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="title-link"
                         >
-                            {highlightedString}
+                            {searchResult.highlightedTitle}
+
+                            {/* The folder badge */}
+                            {searchResult.highlightedFolder && (
+                                <div className="folder-badge">
+                                    {searchResult.highlightedFolder}
+                                </div>
+                            )}
+
+                            {/* If not AI mode and we found matched text, show it */}
+                            {searchMode !== 'ai' && searchResult.context && (
+                                <div style={{ fontSize: '0.8rem', color: 'gray' }}>
+                                    Matched Text: {searchResult.context}
+                                </div>
+                            )}
+
+                            {/* If AI mode, show context */}
+                            {searchMode === 'ai' && (
+                                <div style={{ fontSize: '0.8rem', color: 'gray' }}>
+                                    Context: {searchResult.context}
+                                </div>
+                            )}
                         </a>
-                        {searchMode !== 'ai' && matchedText && (
-                            <div style={{ fontSize: '0.8rem', color: 'gray' }}>
-                                Matched Text: {matchedText}
-                            </div>
-                        )}
-                        {searchMode === 'ai' && (
-                            <div style={{ fontSize: '0.8rem', color: 'gray' }}>
-                                Context: {context}
-                            </div>
-                        )}
                     </li>
+
                 );
             })}
         </ul>

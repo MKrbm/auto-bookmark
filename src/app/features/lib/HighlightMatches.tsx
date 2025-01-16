@@ -3,6 +3,7 @@ import React from 'react';
 import { HighlightResult } from './HighlightResult';
 
 export type SearchMode = 'exact' | 'fuzzy' | 'ai';
+export type SearchScope = 'title' | 'path';
 
 export function highlightMatches(
     text: string,
