@@ -50,7 +50,7 @@ export const Bookmarks: React.FC = () => {
   //   return textToSearch.toLowerCase().includes(searchTerm.toLowerCase());
   // });
 
-  const filteredBookmarks = baseSearchEngine(bookmarks, searchTerm, "exact")
+  const filteredBookmarks = baseSearchEngine(bookmarks, searchTerm, searchMode)
 
   return (
     <div

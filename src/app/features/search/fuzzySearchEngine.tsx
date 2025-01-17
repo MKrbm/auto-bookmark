@@ -2,20 +2,18 @@
 import React from 'react';
 import { Bookmark } from '../lib/types';
 import { SearchResultItem } from './baseSearchEngine';
+import uFuzzy from '@leeoniya/ufuzzy';
+import { highlightText } from '../lib/highlightUtil.tsx';
 
-/** 
- * Return object shape for fuzzy results. 
- * It can match the shape of the exact result so we can unify them later. 
- */
-export interface FuzzySearchResult {
-    highlightedTitle: React.ReactNode;
-    highlightedURL: React.ReactNode;
-    highlightedPath: React.ReactNode;
-    context: string;
-    score: number;    // maybe we have a fuzzy match score
-    original: Bookmark;
+
+
+
+interface State {
+    haystack: string[];
+    uf: uFuzzy;
 }
 
+let state: State | null = null;
 /**
  * Fuzzy search engine. 
  * This is just a skeleton to demonstrate how you might do it, 
@@ -25,40 +23,85 @@ export function fuzzySearchEngine(
     bookmarks: Bookmark[],
     searchTerm: string
 ): SearchResultItem[] {
-    // We'll assume you have some fuzzy utility or code:
-    // For demonstration, let's just do partial includes + "score"
-    const { highlightText } = require('./highlightUtil');
-    const lowerTerm = searchTerm.toLowerCase();
 
+
+
+    let opts: uFuzzy.Options = {
+        intraIns: Math.round(0.6 * 4.2),
+        intraDel: 1,
+        intraSub: 1,
+        intraTrn: 1,
+        intraMode: 1,
+
+    };
+    state = {
+        haystack: bookmarks.map((bookmark) => bookmark.searchString),
+        uf: new uFuzzy(opts),
+    }
+
+
+    let filteredIdx: uFuzzy.HaystackIdxs | null = Array.from({ length: state.haystack.length }, (_, index) => index);
+    console.log('filteredIdx', filteredIdx);
+    console.log('state.haystack', state.haystack);
+
+
+    const needles = searchTerm.toLowerCase().split(' ');
+    for (const term of needles) {
+        if (term.length === 0) { continue; }
+
+        // prefilter
+        filteredIdx = state.uf.filter(state.haystack, term, filteredIdx ? filteredIdx : undefined);
+        // if (filteredIdx) {
+        //     const filteredInfo = state.uf.info(filteredIdx, state.haystack, term);
+        //     // console.log('filteredInfo', filteredInfo);
+        //     filteredBookmarks = filteredIdx.map(idx => bookmarks[idx]);
+        // }
+        // else {
+        //     filteredBookmarks = [];
+        // }
+    }
+    console.log('filteredIdx', filteredIdx);
+
+    // Highlight the search term in the filtered bookmarks
     const results: SearchResultItem[] = [];
 
-    for (const bookmark of bookmarks) {
-        const title = bookmark.path.name || '';
-        const url = bookmark.url || '';
-        const fullPath = bookmark.path.toString();
+    console.log('filteredIdx length', filteredIdx?.length);
+    if (filteredIdx && filteredIdx?.length > 0) {
+        const info = state.uf.info(filteredIdx, state.haystack, needles[0]);
+        for (let i = 0; i < info.idx.length; i++) {
+            const idx = info.idx[i];
+            const bookmark = bookmarks[idx];
+            const highlight = uFuzzy.highlight(bookmark.searchString, info.ranges[i]);
+            const highlightArray = highlight.split('¦')
 
-        // For demonstration, let's do a very naive scoring approach:
-        // +1 if title includes the term, +1 if url includes the term, +1 if path includes the term
-        let score = 0;
-        if (title.toLowerCase().includes(lowerTerm)) score++;
-        if (url.toLowerCase().includes(lowerTerm)) score++;
-        if (fullPath.toLowerCase().includes(lowerTerm)) score++;
 
-        // If score > 0, we consider it a fuzzy match (or you can do something more advanced).
-        if (score > 0) {
+            const titleHighlighted = highlightArray[0] && highlightArray[0].includes('<mark>') ? highlightArray[0] : highlightText(bookmark.path.name, searchTerm);
+            const urlHighlighted = highlightArray[1] && highlightArray[1].includes('<mark>') ? highlightArray[1] : highlightText(bookmark.url, searchTerm);
+            const folderHighlighted = highlightArray[3] && highlightArray[3].includes('<mark>') ? highlightArray[3] : highlightText(bookmark.path.parents().toString(), searchTerm);
+
+            console.log('titleHighlighted', titleHighlighted);
+
             results.push({
-                highlightedTitle: highlightText(title, searchTerm),
-                highlightedURL: highlightText(url, searchTerm),
-                highlightedFolder: highlightText(fullPath, searchTerm),
-                context: '',   // fuzzy doesn't have special context
-                score: score,  // store how "good" the match is
+                highlightedTitle: titleHighlighted,
+                highlightedURL: urlHighlighted,
+                highlightedFolder: folderHighlighted,
+                context: '',
                 original: bookmark,
             });
         }
     }
 
-    // Optionally, you could sort the results by `score` descending
-    results.sort((a, b) => b.score - a.score);
+
+
+    // for (const bookmark of filteredBookmarks) {
+    //     results.push({
+    //         highlightedTitle: highlightText(bookmark.path.name, searchTerm),
+    //         highlightedURL: highlightText(bookmark.url, searchTerm),
+    //         highlightedFolder: highlightText(bookmark.path.parents().toString(), searchTerm),
+    //         context: '',
+    //         original: bookmark,
+    //     });
+    // }
 
     return results;
 }
