@@ -12,6 +12,7 @@ lerna-debug.log*
 
 node_modules
 dist
+**/dist
 dist-ssr
 dist-firefox-v2
 *.local
