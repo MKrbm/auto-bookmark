@@ -36,8 +36,9 @@ export function baseSearchEngine(
             return fuzzySearchEngine(bookmarks, searchTerm);
         }
         case 'ai': {
-            console.error('aiSearchEngine not implemented');
-            return [];
+            return aiSearchEngine(bookmarks, searchTerm);
+            // console.error('aiSearchEngine not implemented');
+            // return [];
             // const aiResults = aiSearchEngine(bookmarks, searchTerm);
             // return aiResults.map((r) => ({ ...r }));
         }
