@@ -1,7 +1,7 @@
 // testAiSearch.ts
-import { baseSearchEngine } from './baseSearchEngine';
+import { baseSearchEngine } from './../baseSearchEngine';
 import { Bookmark } from '../lib/types';
-import { SearchMode } from './baseSearchEngine';
+import { SearchMode } from './../baseSearchEngine';
 
 // テスト用Bookmark
 const sampleBookmarks: Bookmark[] = [

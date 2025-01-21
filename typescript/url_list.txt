@@ -1,0 +1,11 @@
+https://lilianweng.github.io/posts/2023-06-23-agent/
+https://zenn.dev/msksgm/articles/20211108-git-rm-cached
+https://realdgame.jp/event/himitsukessya
+https://www.jra.go.jp/JRADB/accessD.html
+https://www.nebuta.jp/info/docs/R6kojin.pdf
+https://news.yahoo.co.jp/
+https://www.jalan.net/kankou/
+https://qiita.com/Naoki_Ishihara/items/769f373f01261aec285a
+https://langchain-ai.github.io/langgraph/tutorials/introduction/#requirements
+https://docs.aws.amazon.com/bedrock/latest/userguide/agents-how.html
+https://github.com/aws-samples/aws-genai-llm-chatbot/blob/main/README.md
