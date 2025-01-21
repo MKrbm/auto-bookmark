@@ -63,3 +63,25 @@
 .bookmark-item .folder-badge {
     cursor: pointer;
 }
+
+/* highlight.css */
+
+.bookmark-url {
+    margin-top: 0.1rem;
+    /* some slight spacing above it */
+    font-size: 0.6rem;
+    /* smaller text */
+    color: #777;
+    /* a grayish color */
+    opacity: 0.8;
+    /* slightly see-through to reduce prominence */
+    transition: opacity 0.2s ease;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.bookmark-item:hover .bookmark-url {
+    opacity: 1;
+    /* fully visible on hover if you like */
+}

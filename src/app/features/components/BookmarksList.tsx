@@ -10,22 +10,16 @@ interface BookmarksListProps {
     searchMode?: SearchMode; // 'exact', 'fuzzy', or 'ai'
 }
 
+// BookmarksList.tsx
+
 export const BookmarksList: React.FC<BookmarksListProps> = ({
     searchResults,
     searchTerm,
     searchMode = 'exact',
 }) => {
     return (
-        <ul
-            className="list-disc"
-            style={{
-                // paddingLeft: '1rem',
-                // backgroundColor: 'orange',
-            }}
-        >
+        <ul className="list-disc">
             {searchResults.map((searchResult) => {
-                // For example, we always highlight the "name" field 
-                // (since user has already pre-filtered by name vs. path in Bookmarks.tsx).
                 return (
                     <li key={searchResult.original.id} className="bookmark-item">
                         <a
@@ -34,33 +28,41 @@ export const BookmarksList: React.FC<BookmarksListProps> = ({
                             rel="noopener noreferrer"
                             className="title-link"
                         >
+                            {/* Title */}
                             {searchResult.highlightedTitle}
 
-                            {/* The folder badge */}
+                            {/* Folder badge */}
                             {searchResult.highlightedFolder && (
                                 <div className="folder-badge">
                                     {searchResult.highlightedFolder}
                                 </div>
                             )}
 
+                            {/* URL (less visible) */}
+                            {searchResult.highlightedURL && (
+                                <div className="bookmark-url">
+                                    {searchResult.highlightedURL}
+                                </div>
+                            )}
+
                             {/* If not AI mode and we found matched text, show it */}
-                            {searchMode !== 'ai' && searchResult.context && (
+                            {/* {searchMode !== 'ai' && searchResult.context && (
                                 <div style={{ fontSize: '0.8rem', color: 'gray' }}>
                                     Matched Text: {searchResult.context}
                                 </div>
-                            )}
+                            )} */}
 
                             {/* If AI mode, show context */}
-                            {searchMode === 'ai' && (
+                            {/* {searchMode === 'ai' && (
                                 <div style={{ fontSize: '0.8rem', color: 'gray' }}>
                                     Context: {searchResult.context}
                                 </div>
-                            )}
+                            )} */}
                         </a>
                     </li>
-
                 );
             })}
         </ul>
     );
 };
+
