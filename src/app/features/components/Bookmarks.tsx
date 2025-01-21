@@ -30,9 +30,9 @@ export const Bookmarks: React.FC = () => {
   };
 
   // Uncomment to fetch automatically:
-  // useEffect(() => {
-  //   fetchBookmarks();
-  // }, []);
+  useEffect(() => {
+    fetchBookmarks();
+  }, []);
 
   /**
    * Filter logic:
@@ -151,9 +151,6 @@ export const Bookmarks: React.FC = () => {
         </button>
       </div> */}
 
-      <button onClick={fetchBookmarks} className="mb-4 p-2 bg-blue-500 text-white rounded">
-        Sync Bookmarks
-      </button>
 
       <div
         className="custom-scrollbar"
