@@ -6,7 +6,6 @@ initializeWrappedStore();
 store.subscribe(() => {
   // access store state
   // const state = store.getState();
-  // console.log('state', state);
 });
 
 // show welcome page on new install
@@ -19,10 +18,8 @@ browser.runtime.onInstalled.addListener(async (details) => {
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  console.log('request', request);
   if (request.action === 'fetchBookmarks') {
     chrome.bookmarks.getTree((bookmarkTreeNodes) => {
-      // console.log("bookmarkTreeNodes", bookmarkTreeNodes);
       sendResponse({ bookmarks: bookmarkTreeNodes });
     });
     return true; // Will respond asynchronously.
