@@ -12,7 +12,7 @@ import '../styles/highlight.css';
 export const Bookmarks: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchMode, setSearchMode] = useState<SearchMode>('exact');
+  const [searchMode, setSearchMode] = useState<SearchMode>('fuzzy');
   const searchInputRef = useRef<HTMLInputElement>(null);
   /**
    *  NEW: add search scope to decide whether we search only title
