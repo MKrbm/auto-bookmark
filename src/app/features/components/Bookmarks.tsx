@@ -1,8 +1,8 @@
 // Bookmarks.tsx
 // Main component that fetches bookmarks, filters them, and renders BookmarksList.
 
-import React, { useEffect, useState } from 'react';
-import { SearchMode} from '../lib/highlightMatches'; 
+import React, { useEffect, useState, useRef } from 'react';
+import { SearchMode } from '../lib/highlightMatches';
 import { BookmarksList } from './BookmarksList';
 import { flattenBookmarks } from '../lib/utils';
 import { Bookmark } from '../lib/types';
@@ -13,6 +13,7 @@ export const Bookmarks: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('exact');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   /**
    *  NEW: add search scope to decide whether we search only title
    *  (i.e. bookmark.path.name) or entire path (bookmark.path.toString()).
@@ -33,6 +34,13 @@ export const Bookmarks: React.FC = () => {
   useEffect(() => {
     fetchBookmarks();
   }, []);
+
+  // Focus the search input when the component mounts
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [searchMode]);
 
   /**
    * Filter logic:
@@ -70,6 +78,7 @@ export const Bookmarks: React.FC = () => {
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="mb-4 p-2 border border-gray-300 rounded"
+        ref={searchInputRef}
       />
 
       {/* 

@@ -23,8 +23,6 @@ export function exactSearchEngine(
     // (adjust the path to match your project structure)
 
 
-    console.log('exactSearchEngine', { bookmarks, searchTerm })
-
     const searchTermArray = searchTerm.toLowerCase().split(' ')
 
     // filter bookmarks

@@ -29,14 +29,13 @@ export function fuzzySearchEngine(
 
 
 
-    debugger;
+    const fuzziness = Math.round(0.6 * 4.2);
     let opts: uFuzzy.Options = {
-        intraIns: Math.round(0.6 * 4.2),
+        intraMode: 0,
+        intraIns: fuzziness,
         intraDel: 1,
         intraSub: 1,
         intraTrn: 1,
-        intraMode: 1,
-
     };
     const state = {
         haystack: bookmarks.map((bookmark) => bookmark.searchString),
@@ -46,29 +45,32 @@ export function fuzzySearchEngine(
 
     let filteredIdx: uFuzzy.HaystackIdxs | null = Array.from({ length: state.haystack.length }, (_, index) => index);
 
-    const needles = searchTerm.length > 0 ? searchTerm.toLowerCase().split('3000') : [];
-    for (const term of needles) {
-        if (term.length === 0) { continue; }
-        filteredIdx = state.uf.filter(state.haystack, term, filteredIdx ? filteredIdx : undefined);
+    // const needles = searchTerm.length > 0 ? searchTerm.toLowerCase().split('3000') : [];
+    // for (const term of needles) {
+    // if (term.length === 0) { continue; }
+    if (searchTerm.length > 0) {
+        filteredIdx = state.uf.filter(state.haystack, searchTerm, filteredIdx ? filteredIdx : undefined);
     }
+    // }
 
     // Highlight the search term in the filtered bookmarks
     const results: SearchResultItem[] = [];
 
-    for (let i = 0; i < needles.length; i++) {
-        const needle = needles[i];
+    if (searchTerm.length > 0) {
         if (filteredIdx && filteredIdx?.length > 0) {
-            const info = state.uf.info(filteredIdx, state.haystack, needle);
+            const info = state.uf.info(filteredIdx, state.haystack, searchTerm);
             for (let j = 0; j < info.idx.length; j++) {
-                const idx = info.idx[i];
-                const bookmark = bookmarks[idx];
-                const highlight = uFuzzy.highlight(bookmark.searchString, info.ranges[i]);
-                const highlightArray = highlight.split('¦')
+            const idx = info.idx[j];
+            const bookmark = bookmarks[idx];
+            const highlight = uFuzzy.highlight(bookmark.searchString, info.ranges[j]);
+            const highlightArray = highlight.split('¦')
 
 
-                const titleHighlighted = highlightArray[0] && highlightArray[0].includes('<mark>') ? replaceMarkAndConvert(highlightArray[0]) : highlightText(bookmark.path.name, searchTerm);
-                const urlHighlighted = highlightArray[1] && highlightArray[1].includes('<mark>') ? replaceMarkAndConvert(highlightArray[1]) : highlightText(bookmark.url, searchTerm);
-                const folderHighlighted = highlightArray[3] && highlightArray[3].includes('<mark>') ? replaceMarkAndConvert(highlightArray[3]) : highlightText(bookmark.path.parents().toString(), searchTerm);
+                const titleHighlighted = highlightArray[0] && highlightArray[0].includes('<mark>') ? replaceMarkAndConvert(highlightArray[0]) : bookmark.path.name;
+                const urlHighlighted = highlightArray[1] && highlightArray[1].includes('<mark>') ? replaceMarkAndConvert(highlightArray[1]) : bookmark.url;
+                const folderHighlighted = highlightArray[2] && highlightArray[2].includes('<mark>') ? replaceMarkAndConvert(highlightArray[2]) : bookmark.path.parents().toString();
+
+                console.log('folderHighlighted', folderHighlighted)
 
 
                 // if (i == needles.length - 1) {
@@ -78,8 +80,7 @@ export function fuzzySearchEngine(
                         highlightedFolder: folderHighlighted,
                         context: '',
                         original: bookmark,
-                    });
-                // }
+                });
             }
         }
     }
