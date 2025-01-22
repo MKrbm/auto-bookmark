@@ -51,6 +51,8 @@ export function fuzzySearchEngine(
     if (searchTerm.length > 0) {
         filteredIdx = state.uf.filter(state.haystack, searchTerm, filteredIdx ? filteredIdx : undefined);
     }
+
+    console.log('filteredIdx', filteredIdx)
     // }
 
     // Highlight the search term in the filtered bookmarks
@@ -59,11 +61,11 @@ export function fuzzySearchEngine(
     if (searchTerm.length > 0) {
         if (filteredIdx && filteredIdx?.length > 0) {
             const info = state.uf.info(filteredIdx, state.haystack, searchTerm);
-            for (let j = 0; j < info.idx.length; j++) {
-            const idx = info.idx[j];
-            const bookmark = bookmarks[idx];
-            const highlight = uFuzzy.highlight(bookmark.searchString, info.ranges[j]);
-            const highlightArray = highlight.split('¦')
+            const order = state.uf.sort(info, state.haystack, searchTerm);
+            for (const idx of order) {
+                const bookmark = bookmarks[info.idx[idx]];
+                const highlight = uFuzzy.highlight(bookmark.searchString, info.ranges[idx]);
+                const highlightArray = highlight.split('¦')
 
 
                 const titleHighlighted = highlightArray[0] && highlightArray[0].includes('<mark>') ? replaceMarkAndConvert(highlightArray[0]) : bookmark.path.name;
@@ -74,12 +76,12 @@ export function fuzzySearchEngine(
 
 
                 // if (i == needles.length - 1) {
-                    results.push({
-                        highlightedTitle: titleHighlighted,
-                        highlightedURL: urlHighlighted,
-                        highlightedFolder: folderHighlighted,
-                        context: '',
-                        original: bookmark,
+                results.push({
+                    highlightedTitle: titleHighlighted,
+                    highlightedURL: urlHighlighted,
+                    highlightedFolder: folderHighlighted,
+                    context: '',
+                    original: bookmark,
                 });
             }
         }
