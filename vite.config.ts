@@ -2,6 +2,8 @@ import { crx, defineManifest } from "@crxjs/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { resolve, join } from "path";
+import dotenv from 'dotenv';
+dotenv.config();
 
 // const manifest = defineManifest({
 //     manifest_version: 3,
@@ -70,6 +72,7 @@ const manifest = defineManifest((env) => {
 export default defineConfig({
     root: resolve(__dirname, 'src'),
     publicDir: resolve(__dirname, 'public'),
+
     // build: {
     //     outDir: resolve(__dirname, 'dist'),
     //     rollupOptions: {

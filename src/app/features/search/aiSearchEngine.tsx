@@ -4,9 +4,17 @@ import { SearchResultItem } from './baseSearchEngine';
 import { highlightText } from '../lib/highlightUtil';
 import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
 
+<<<<<<< HEAD
 // こちらは OPENAI_API_KEY の読み込みなど、プロジェクト構成に合わせて
 const embeddingModel = new OpenAIEmbeddings({
   openAIApiKey: '',
+=======
+// Example: If the library doesn't accept an AbortSignal in embedDocuments,
+// we can do manual checks for `signal?.aborted`.
+console.log(import.meta.env.VITE_OPENAI_API_KEY);
+const embeddingModel = new OpenAIEmbeddings({
+  openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+>>>>>>> eaf22eb (moved API key to .env file)
   model: "text-embedding-3-large",
   dimensions: 1024,
 });
