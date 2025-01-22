@@ -55,11 +55,7 @@ export function createSearchString(path: Path, url: string, tags: string) {
         console.error('createSearchString: No URL given', { title, url, tags, folder })
         return searchString
     }
-    if (title && !title.toLowerCase().includes(url.toLowerCase())) {
-        searchString += title + separator + url
-    } else {
-        searchString += url
-    }
+    searchString += title + separator + url
     if (tags) {
         searchString += separator + tags
     }
