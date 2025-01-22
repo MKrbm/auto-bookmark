@@ -15,10 +15,10 @@ import { SearchResultItem } from './baseSearchEngine';
  * - For each bookmark, if it contains the searchTerm, build a highlighted version.
  * - If you want a stricter approach (like "must match everything"), you can adapt.
  */
-export function exactSearchEngine(
+export async function exactSearchEngine(
     bookmarks: Bookmark[],
     searchTerm: string
-): SearchResultItem[] {
+): Promise<SearchResultItem[]> {
     // Import the highlightText utility from your new file
     // (adjust the path to match your project structure)
 

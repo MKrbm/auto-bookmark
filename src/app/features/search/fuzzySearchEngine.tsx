@@ -22,10 +22,11 @@ function replaceMarkAndConvert(htmlString: string): React.ReactNode {
 * This is just a skeleton to demonstrate how you might do it, 
 * you can implement your actual fuzzy logic or integrate an external library.
 */
-export function fuzzySearchEngine(
+export async function fuzzySearchEngine(
     bookmarks: Bookmark[],
-    searchTerm: string
-): SearchResultItem[] {
+    searchTerm: string,
+    signal?: AbortSignal
+): Promise<SearchResultItem[]> {
 
 
 

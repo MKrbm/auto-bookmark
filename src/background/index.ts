@@ -1,12 +1,12 @@
 import browser from 'webextension-polyfill';
-import store, { initializeWrappedStore } from '../app/store';
+// import store, { initializeWrappedStore } from '../app/store';
 
-initializeWrappedStore();
+// initializeWrappedStore();
 
-store.subscribe(() => {
-  // access store state
-  // const state = store.getState();
-});
+// store.subscribe(() => {
+//   // access store state
+//   // const state = store.getState();
+// });
 
 // show welcome page on new install
 browser.runtime.onInstalled.addListener(async (details) => {

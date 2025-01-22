@@ -2,24 +2,17 @@
 import { Bookmark } from '../lib/types';
 import { SearchResultItem } from './baseSearchEngine';
 import { highlightText } from '../lib/highlightUtil';
-import { OpenAIEmbeddings } from 'langchain/embeddings/openai';
+import { OpenAIEmbeddings } from "@langchain/openai";
 
-<<<<<<< HEAD
-// こちらは OPENAI_API_KEY の読み込みなど、プロジェクト構成に合わせて
-const embeddingModel = new OpenAIEmbeddings({
-  openAIApiKey: '',
-=======
 // Example: If the library doesn't accept an AbortSignal in embedDocuments,
 // we can do manual checks for `signal?.aborted`.
 console.log(import.meta.env.VITE_OPENAI_API_KEY);
 const embeddingModel = new OpenAIEmbeddings({
   openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
->>>>>>> eaf22eb (moved API key to .env file)
   model: "text-embedding-3-large",
   dimensions: 1024,
 });
 
-// 単純なコサイン類似度
 function calculateCosineSimilarity(a: number[], b: number[]): number {
   const dot = a.reduce((acc, val, idx) => acc + val * b[idx], 0);
   const magA = Math.sqrt(a.reduce((acc, val) => acc + val * val, 0));
@@ -27,58 +20,55 @@ function calculateCosineSimilarity(a: number[], b: number[]): number {
   return (magA && magB) ? (dot / (magA * magB)) : 0;
 }
 
-/**
- * AI検索 (Bookmark配列を受け取り、searchTermとの類似度を計算)
- * - bookmarkごとに searchString を Embedding
- * - searchTerm も Embedding
- * - コサイン類似度の高い順にソート
- * - SearchResultItem[] を返す
- */
 export async function aiSearchEngine(
   bookmarks: Bookmark[],
-  searchTerm: string
+  searchTerm: string,
+  signal?: AbortSignal
 ): Promise<SearchResultItem[]> {
 
-  if (!searchTerm || !searchTerm.trim()) {
+  if (!searchTerm.trim()) {
+    return [];
+  }
+  if (signal?.aborted) {
+    // If the effect was cleaned up before we even started, bail out
+    console.log('[aiSearchEngine] Aborted before starting with searchTerm: ', searchTerm);
     return [];
   }
 
-  // 1) 検索クエリを Embedding
+  // 1) Embedding for search term
   const [queryEmbedding] = await embeddingModel.embedDocuments([searchTerm]);
-  //   queryEmbedding は 例えば 1536次元の配列
+  if (signal?.aborted) {
+    console.log('[aiSearchEngine] Aborted after query embedding with searchTerm: ', searchTerm);
+    return [];
+  }
 
-  // 2) Bookmarkごとの Embeddingを取得
-  //    ここでは bookmark.searchString を埋め込む (リアルタイム)
-  //    たとえば 10件の bookmark があれば 10要素の配列になる
+  // 2) Embeddings for each bookmark
   const texts = bookmarks.map(b => b.searchString);
   const embeddings = await embeddingModel.embedDocuments(texts);
-  // embeddings[i] が bookmarks[i] に対応
+  if (signal?.aborted) {
+    console.log('[aiSearchEngine] Aborted after bookmark embeddings with searchTerm: ', searchTerm);
+    return [];
+  }
 
-  // 3) 類似度を計算 & Sort
-  //    embeddings[i] と queryEmbedding を比べる
+  // 3) Compute similarity
   const bookmarkScores = embeddings.map((emb, i) => {
     const similarity = calculateCosineSimilarity(emb, queryEmbedding);
     return { index: i, similarity };
   });
   bookmarkScores.sort((a, b) => b.similarity - a.similarity);
 
-  // 4) Top Nなどに絞る場合
-  //    例えば 10件だけ返す -> slice(0, 10)
-  const topScores = bookmarkScores; // .slice(0, 10) など
-
-  // 5) SearchResultItem[] を生成
-  const results: SearchResultItem[] = topScores.map(({ index, similarity }) => {
+  // 4) Build SearchResultItem[]
+  const results: SearchResultItem[] = bookmarkScores.map(({ index, similarity }) => {
     const bk = bookmarks[index];
     const title = bk.path.name || '';
     const url = bk.url || '';
-    const fullPath = bk.path.parents().join(' / ');
+    const fullPath = bk.path.parents().toString();
 
     return {
-      // 好みで highlightText を適用
       highlightedTitle: highlightText(title, searchTerm),
       highlightedURL: highlightText(url, searchTerm),
       highlightedFolder: highlightText(fullPath, searchTerm),
-      context: bk.searchString,
+      context: "context",
       score: similarity,
       original: bk,
     };

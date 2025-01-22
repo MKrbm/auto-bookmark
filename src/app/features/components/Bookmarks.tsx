@@ -1,27 +1,19 @@
 // Bookmarks.tsx
-// Main component that fetches bookmarks, filters them, and renders BookmarksList.
-
 import React, { useEffect, useState, useRef } from 'react';
-import { SearchMode } from '../lib/highlightMatches';
+import { SearchMode } from '../lib/HighlightMatches';
 import { BookmarksList } from './BookmarksList';
 import { flattenBookmarks } from '../lib/utils';
 import { Bookmark } from '../lib/types';
-import { baseSearchEngine } from '../search/baseSearchEngine';
-import '../styles/highlight.css';
+import { baseSearchEngine, SearchResultItem } from '../search/baseSearchEngine';
 
 export const Bookmarks: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('fuzzy');
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  /**
-   *  NEW: add search scope to decide whether we search only title
-   *  (i.e. bookmark.path.name) or entire path (bookmark.path.toString()).
-   */
-  // const [searchScope, setSearchScope] = useState<'title' | 'path'>('title');
-  // const [searchScope, setSearchScope] = useState<SearchScope>('title');
+  const [filteredBookmarks, setFilteredBookmarks] = useState<SearchResultItem[]>([]);
 
-  // Example fetch function that uses chrome.runtime API to get bookmarks
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const fetchBookmarks = () => {
     chrome.runtime.sendMessage({ action: 'fetchBookmarks' }, (response) => {
       if (response && response.bookmarks) {
@@ -30,48 +22,48 @@ export const Bookmarks: React.FC = () => {
     });
   };
 
-  // Uncomment to fetch automatically:
   useEffect(() => {
     fetchBookmarks();
   }, []);
 
-  // Focus the search input when the component mounts
   useEffect(() => {
     if (searchInputRef.current) {
       searchInputRef.current.focus();
     }
   }, [searchMode]);
 
-  /**
-   * Filter logic:
-   * - If searchScope = 'title', we only check bookmark.path.name
-   * - If searchScope = 'path', we use bookmark.path.toString()
-   * - Then we do a simple "includes" ignoring case
-   */
-  // const filteredBookmarks = Object.values(bookmarks).filter((bookmark) => {
-  //   const textToSearch =
-  //     // searchScope === 'title'
-  //     //   ? bookmark.path.name
-  //     //   : bookmark.path.toString();
-  //     bookmark.path.name;
+  useEffect(() => {
+    // --- 1) Create a new controller for each search ---
+    const abortController = new AbortController();
 
-  //   return textToSearch.toLowerCase().includes(searchTerm.toLowerCase());
-  // });
+    // --- 2) Debounce search: wait 300ms before calling search ---
+    const debounceTimer = setTimeout(() => {
+      // If this effect hasn't been cleaned up in 300ms, proceed with search
+      baseSearchEngine(bookmarks, searchTerm, searchMode, abortController.signal)
+        .then((results) => {
+          // If the request wasn't aborted, set the results
+          if (!abortController.signal.aborted) {
+            setFilteredBookmarks(results);
+          }
+        })
+        .catch((err) => {
+          // If it's an abort error, ignore; otherwise, log
+          if (err.name !== 'AbortError') {
+            console.error('Error in baseSearchEngine:', err);
+          }
+        });
+    }, 300); // 300ms debounce delay
 
-  const filteredBookmarks = baseSearchEngine(bookmarks, searchTerm, searchMode)
+    // --- 3) Cleanup: if either the user typed again (before 300ms),
+    //                or unmounted, we abort and clear the timer ---
+    return () => {
+      abortController.abort(); // cancel the in-flight search if any
+      clearTimeout(debounceTimer);
+    };
+  }, [bookmarks, searchTerm, searchMode]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        paddingLeft: '1rem',
-        paddingRight: '1rem',
-        paddingBottom: '2rem',
-        height: '100%',
-        overflow: 'auto',
-      }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem', height: '100%', overflow: 'auto' }}>
       <input
         type="text"
         placeholder="Search bookmarks..."
@@ -81,11 +73,6 @@ export const Bookmarks: React.FC = () => {
         ref={searchInputRef}
       />
 
-      {/* 
-        1) Search Mode Buttons: 
-           - highlight the active mode
-           - e.g. use a simple style or a class. 
-      */}
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
         <button
           onClick={() => setSearchMode('exact')}
@@ -93,7 +80,6 @@ export const Bookmarks: React.FC = () => {
             padding: '0.5rem 1rem',
             backgroundColor: searchMode === 'exact' ? '#007BFF' : '#ccc',
             color: searchMode === 'exact' ? '#fff' : '#000',
-            border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
           }}
@@ -106,7 +92,6 @@ export const Bookmarks: React.FC = () => {
             padding: '0.5rem 1rem',
             backgroundColor: searchMode === 'fuzzy' ? '#007BFF' : '#ccc',
             color: searchMode === 'fuzzy' ? '#fff' : '#000',
-            border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
           }}
@@ -119,7 +104,6 @@ export const Bookmarks: React.FC = () => {
             padding: '0.5rem 1rem',
             backgroundColor: searchMode === 'ai' ? '#007BFF' : '#ccc',
             color: searchMode === 'ai' ? '#fff' : '#000',
-            border: 'none',
             borderRadius: '4px',
             cursor: 'pointer',
           }}
@@ -128,49 +112,7 @@ export const Bookmarks: React.FC = () => {
         </button>
       </div>
 
-      {/* 
-        2) Search Scope Toggle: "Title Only" or "Entire Path"
-      */}
-      {/* <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem' }}>
-        <button
-          onClick={() => setSearchScope('title')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: searchScope === 'title' ? '#28a745' : '#ccc',
-            color: searchScope === 'title' ? '#fff' : '#000',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          Title Only
-        </button>
-        <button
-          onClick={() => setSearchScope('path')}
-          style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: searchScope === 'path' ? '#28a745' : '#ccc',
-            color: searchScope === 'path' ? '#fff' : '#000',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-          }}
-        >
-          Entire Path
-        </button>
-      </div> */}
-
-
-      <div
-        className="custom-scrollbar"
-        style={{
-          paddingLeft: '1rem',
-          height: '100%',
-          marginBottom: '1rem',
-          backgroundColor: 'cyan',
-        }}
-      >
-        {/* Pass searchTerm, searchMode, and searchScope down if needed */}
+      <div className="custom-scrollbar" style={{ paddingLeft: '1rem', height: '100%', marginBottom: '1rem', backgroundColor: 'cyan' }}>
         <BookmarksList
           searchResults={filteredBookmarks}
           searchTerm={searchTerm}

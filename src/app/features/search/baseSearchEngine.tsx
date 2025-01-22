@@ -15,24 +15,22 @@ export interface SearchResultItem {
   original: Bookmark;
 }
 
-// ❶ async 関数に変更 & 戻り値を Promise<SearchResultItem[]>
+// Extend signature to accept optional AbortSignal
 export async function baseSearchEngine(
   bookmarks: Bookmark[],
   searchTerm: string,
-  searchMode: SearchMode
+  searchMode: SearchMode,
+  signal?: AbortSignal
 ): Promise<SearchResultItem[]> {
+
   switch (searchMode) {
-    case 'exact': {
-      return Promise.resolve(exactSearchEngine(bookmarks, searchTerm));
-    }
-    case 'fuzzy': {
-      return Promise.resolve(fuzzySearchEngine(bookmarks, searchTerm));
-    }
-    case 'ai': {
-    //   return Promise.resolve([]);
-      return await aiSearchEngine(bookmarks, searchTerm);
-    }
+    case 'exact':
+      return exactSearchEngine(bookmarks, searchTerm);
+    case 'fuzzy':
+      return fuzzySearchEngine(bookmarks, searchTerm);
+    case 'ai':
+      return aiSearchEngine(bookmarks, searchTerm, signal);
     default:
-      return Promise.resolve([]);
+      throw new Error(`Unsupported search mode: ${searchMode}`);
   }
 }
