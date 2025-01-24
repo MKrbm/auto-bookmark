@@ -23,6 +23,10 @@ export async function exactSearchEngine(
     // (adjust the path to match your project structure)
 
 
+    if (searchTerm.length === 0) {
+        return [];
+    }
+
     const searchTermArray = searchTerm.toLowerCase().split(' ')
 
     // filter bookmarks

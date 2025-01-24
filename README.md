@@ -15,5 +15,15 @@
 - You can inspect the extension by clicking `background page` and then `inspect`
 
 
+# Environment variables
+
+In development, you can set the environment variables in the `.env` file for OpenAI API key.
+The `.env` file is not included in the repository, so you need to create it yourself.
+- Create a `.env` file under src directory
+- Add the following line: `VITE_OPENAI_API_KEY=your_openai_api_key`
+- Replace `your_openai_api_key` with your actual OpenAI API key
+
+
+
 # TODO
 

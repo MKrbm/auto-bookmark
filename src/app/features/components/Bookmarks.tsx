@@ -52,7 +52,7 @@ export const Bookmarks: React.FC = () => {
             console.error('Error in baseSearchEngine:', err);
           }
         });
-    }, 300); // 300ms debounce delay
+    }, 100); // 300ms debounce delay
 
     // --- 3) Cleanup: if either the user typed again (before 300ms),
     //                or unmounted, we abort and clear the timer ---
