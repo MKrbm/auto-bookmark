@@ -6,9 +6,10 @@ import { OpenAIEmbeddings } from "@langchain/openai";
 
 // Example: If the library doesn't accept an AbortSignal in embedDocuments,
 // we can do manual checks for `signal?.aborted`.
-console.log(import.meta.env.VITE_OPENAI_API_KEY);
+// console.log(import.meta.env.VITE_OPENAI_API_KEY);
+console.log(process.env.VITE_OPENAI_API_KEY);
 const embeddingModel = new OpenAIEmbeddings({
-  openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+  openAIApiKey: process.env.VITE_OPENAI_API_KEY || '',
   model: "text-embedding-3-large",
   dimensions: 1024,
 });

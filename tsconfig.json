@@ -3,5 +3,18 @@
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
+  ],
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "jsx": "react",        
+    "esModuleInterop": true,   
+    "strict": true,             
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "src" // src以下をトランスパイル対象に
   ]
 }
