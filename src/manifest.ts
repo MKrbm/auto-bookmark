@@ -1,8 +1,5 @@
+// src/manifest.ts
 import { defineManifest } from '@crxjs/vite-plugin';
-// If your bundler/TypeScript requires an import assertion:
-// import pkg from '../package.json' assert { type: 'json' };
-// const { version } = pkg;
-// import { version } from '../package.json';
 
 export default defineManifest((env) => {
   const isDev = env.mode === 'development';
@@ -13,10 +10,9 @@ export default defineManifest((env) => {
       ? '[Dev] Browser Extension TypeScript & React Starter'
       : 'Browser Extension TypeScript & React Starter',
     description: 'Browser Extension, TypeScript, React',
-    version : "1.0.0",
+    version: '1.0.0',
     background: {
       service_worker: 'background/index.ts',
-      // If you’re using ES modules in background/index.ts, you typically need:
       type: 'module',
     },
     host_permissions: ['<all_urls>'],
@@ -25,8 +21,14 @@ export default defineManifest((env) => {
       open_in_tab: true,
     },
     web_accessible_resources: [
+      // 既存の設定を触らずに、追加登録
       {
         resources: ['welcome/welcome.html'],
+        matches: ['<all_urls>'],
+      },
+      // ここにテストページを追加
+      {
+        resources: ['test/test.html'],
         matches: ['<all_urls>'],
       },
     ],
@@ -46,12 +48,5 @@ export default defineManifest((env) => {
       '128': 'images/extension_128.png',
     },
     permissions: ['storage', 'tabs', 'bookmarks'],
-    // Uncomment if you have content scripts:
-    // content_scripts: [
-    //   {
-    //     matches: ['http://*/*', 'https://*/*', 'file:///*'],
-    //     js: ['content/index.tsx'],
-    //   },
-    // ],
   };
 });
