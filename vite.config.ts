@@ -5,16 +5,6 @@ import { resolve, join } from "path";
 import dotenv from 'dotenv';
 dotenv.config();
 
-// const manifest = defineManifest({
-//     manifest_version: 3,
-//     name: "Open Bookmarks",
-//     version: "1.0.0",
-//     permissions: ["bookmarks"],
-//     action: {
-//         default_popup: "popup.html",
-//     },
-// });
-
 const manifest = defineManifest((env) => {
     const isDev = env.mode === 'development';
 
@@ -27,7 +17,6 @@ const manifest = defineManifest((env) => {
         version: '1.0.0',
         background: {
             service_worker: 'background/index.ts',
-            // If you’re using ES modules in background/index.ts, you typically need:
             type: 'module',
         },
         host_permissions: ['<all_urls>'],
@@ -35,11 +24,14 @@ const manifest = defineManifest((env) => {
             page: 'options/options.html',
             open_in_tab: true,
         },
-        // The web_accessible_resources field specifies which resources in the extension can be accessed by web pages.
-        // In this case, the welcome.html file in the welcome directory is accessible to all URLs.
         web_accessible_resources: [
             {
-                resources: ['welcome/welcome.html', 'popup/popup.html', 'options/options.html'],
+                resources: [
+                    'welcome/welcome.html',
+                    'popup/popup.html',
+                    'options/options.html',
+                    'test/test.html'
+                ],
                 matches: ['<all_urls>'],
             },
         ],
@@ -59,31 +51,28 @@ const manifest = defineManifest((env) => {
             '128': 'images/extension_128.png',
         },
         permissions: ['storage', 'tabs', 'bookmarks'],
-        // Uncomment if you have content scripts:
-        // content_scripts: [
-        //   {
-        //     matches: ['http://*/*', 'https://*/*', 'file:///*'],
-        //     js: ['content/index.tsx'],
-        //   },
-        // ],
     };
 });
 
 export default defineConfig({
     root: resolve(__dirname, 'src'),
     publicDir: resolve(__dirname, 'public'),
+    
+    server: {
+        hmr: false  // HMRを無効化
+    },
 
-    // build: {
-    //     outDir: resolve(__dirname, 'dist'),
-    //     rollupOptions: {
-    //         input: {
-    //             // see web_accessible_resources in the manifest config
-    //             welcome: join(__dirname, 'src/welcome/welcome.html'),
-    //         },
-    //         output: {
-    //             chunkFileNames: 'assets/chunk-[hash].js',
-    //         },
-    //     },
-    // },
+    build: {
+        outDir: resolve(__dirname, 'dist'),
+        rollupOptions: {
+            input: {
+                welcome: join(__dirname, 'src/welcome/welcome.html'),
+                test: join(__dirname, 'src/test/test.html'),
+            },
+            output: {
+                chunkFileNames: 'assets/chunk-[hash].js',
+            },
+        },
+    },
     plugins: [react(), crx({ manifest })],
 });

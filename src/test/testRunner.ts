@@ -1,11 +1,8 @@
-// src/test/testRunner.ts
-
 import { processBookmarks } from '../app/features/lib/runnerBookmarks';
 import { Bookmark } from '../app/features/lib/bookmarkTypes';
 
 console.log('=== testRunner.ts loaded ===');
 
-// example_usage.ts と同じロジック
 const bookmarks: Bookmark[] = [
   {
     id: "287",
@@ -13,7 +10,7 @@ const bookmarks: Bookmark[] = [
       segments: ["Bookmarks Bar", "cameras", "光と絵の具の三原色（色とは何か）"],
       name: "光と絵の具の三原色（色とは何か）"
     },
-    url: "https://squash.or.jp/game/"
+    url: "http://fnorio.com/0074trichromatism1/trichromatism1.html"
   },
   {
     id: "288",
@@ -35,7 +32,6 @@ async function runTest() {
   }
 }
 
-// ページ読み込み完了後に実行
 document.addEventListener('DOMContentLoaded', () => {
   runTest();
 });
