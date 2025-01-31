@@ -26,7 +26,14 @@ async function runTest() {
   try {
     const results = await processBookmarks(bookmarks);
     console.log('=== 最終結果 ===');
-    console.log(JSON.stringify(results, null, 2));
+    
+    // chunk_vectorの先頭3要素だけを残したコピーを作成
+    const shortResults = results.map((item) => ({
+      ...item,
+      chunk_vector: item.chunk_vector.slice(0, 3),
+    }));
+
+    console.log(JSON.stringify(shortResults, null, 2));
   } catch (err) {
     console.error('Error in processBookmarks:', err);
   }
