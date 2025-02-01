@@ -1,4 +1,5 @@
 import { FetchedBookmark } from './fetchBookmarkTypes';
+import { ChunkData } from './chunkTypes';
 import scrapeMain from './scrape';
 import { create_vectorsMain } from './create_vectors';
 
@@ -12,22 +13,8 @@ function urlToFilename(url: string): string {
  */
 export async function processFetchedBookmarks(
   fetched: FetchedBookmark[]
-): Promise<{
-  userId: string;
-  url: string;
-  path: FetchedBookmark["path"];
-  chunk_index: number;
-  chunk_strings: string;
-  chunk_vector: number[];
-}[]> {
-  const results: {
-    userId: string;
-    url: string;
-    path: FetchedBookmark['path'];
-    chunk_index: number;
-    chunk_strings: string;
-    chunk_vector: number[];
-  }[] = [];
+): Promise<ChunkData[]> {
+  const results: ChunkData[] = [];
 
   for (const item of fetched) {
     // 1) userTitle: pathの末尾 or path.name
@@ -59,7 +46,7 @@ export async function processFetchedBookmarks(
         url: item.url,
         path: item.path,
         chunk_index: chunk.chunk_index,
-        chunk_strings: chunk.chunk_text,
+        chunk_text: chunk.chunk_text,
         chunk_vector: chunk.chunk_vector
       });
 
@@ -70,7 +57,7 @@ export async function processFetchedBookmarks(
         url: item.url,
         path: item.path,
         chunk_index: chunk.chunk_index,
-        chunk_strings: chunk.chunk_text,
+        chunk_text: chunk.chunk_text,
         chunk_vector: chunk.chunk_vector
       }));
     }
