@@ -1,12 +1,14 @@
 // Bookmarks.tsx
 import React, { useEffect, useState, useRef } from 'react';
+import { processFetchedBookmarks } from '../lib/runnerBookmarks_new';
+import { FetchedBookmark } from '../lib/fetchBookmarkTypes';
 import { SearchMode } from '../lib/HighlightMatches';
 import { BookmarksList } from './BookmarksList';
 import { flattenBookmarks } from '../lib/utils';
 import { Bookmark } from '../lib/types';
 import { baseSearchEngine, SearchResultItem } from '../search/baseSearchEngine';
 import { ChunkData } from '../lib/chunkTypes';
-import { aiSearchEngineChunks } from '../search/aiSearchEngineChunks';
+import { aiSearchRepresentative } from '../search/aiSearchRepresentative';
 import { createPath } from '../lib/path';
 
 export const Bookmarks: React.FC = () => {
@@ -32,18 +34,33 @@ export const Bookmarks: React.FC = () => {
     setIsSyncing(true);
     setSyncError(null);
 
-    chrome.runtime.sendMessage({ action: 'syncBookmarks' }, async (response) => {
-      if (response.success) {
-        // チャンクデータを読み込む
-        const result = await chrome.storage.local.get('chunkData');
-        if (result.chunkData) {
-          setChunkData(result.chunkData);
-        }
-      } else {
-        setSyncError(response.error || 'An error occurred during sync');
-      }
+    try {
+      // まずブックマークを取得
+      const fetchedData = await new Promise<FetchedBookmark[]>((resolve) => {
+        chrome.runtime.sendMessage({ action: 'syncBookmarks' }, (response) => {
+          if (response.success && response.fetchedBookmarks) {
+            resolve(response.fetchedBookmarks);
+          } else {
+            throw new Error(response.error || 'Failed to fetch bookmarks');
+          }
+        });
+      });
+
+      // processFetchedBookmarksで処理
+      const processedChunks = await processFetchedBookmarks(fetchedData);
+      
+      // 処理結果をストレージに保存
+      await chrome.storage.local.set({ chunkData: processedChunks });
+      
+      // 状態を更新
+      setChunkData(processedChunks);
+      
+    } catch (error) {
+      console.error('Sync error:', error);
+      setSyncError(error instanceof Error ? error.message : 'An error occurred during sync');
+    } finally {
       setIsSyncing(false);
-    });
+    }
   };
 
   // 初期ロード時にブックマークとチャンクデータを取得
@@ -69,21 +86,21 @@ export const Bookmarks: React.FC = () => {
         let results: SearchResultItem[] = [];
         
         if (searchMode === 'ai' && chunkData.length > 0) {
-          // AIモードの場合はチャンクデータを使用
-          const chunkResults = await aiSearchEngineChunks(chunkData, searchTerm, abortController.signal);
+          // AIモードの場合はaiSearchRepresentativeを使用
+          const representativeResults = await aiSearchRepresentative(searchTerm, chunkData, 5, abortController.signal);
           
-          // ChunkSearchResultをSearchResultItemに変換
-          results = chunkResults.map(result => ({
-            highlightedTitle: result.chunk.path.name,
-            highlightedURL: result.chunk.url,
-            highlightedFolder: result.chunk.path.segments.join(' / '),
-            context: result.chunk.chunk_text,
-            score: result.score,
+          // RepresentativeSearchResultをSearchResultItemに変換
+          results = representativeResults.map(result => ({
+            highlightedTitle: result.title,
+            highlightedURL: result.url,
+            highlightedFolder: result.path.segments.join(' / '),
+            context: result.snippet,
+            score: result.similarity,
             original: {
-              id: result.chunk.userId,
-              url: result.chunk.url,
-              path: createPath(result.chunk.path.segments),
-              searchString: result.chunk.chunk_text
+              id: result.userId,
+              url: result.url,
+              path: createPath(result.path.segments),
+              searchString: result.snippet
             }
           }));
         } else {
