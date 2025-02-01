@@ -45,19 +45,26 @@ export const BookmarksList: React.FC<BookmarksListProps> = ({
                                 </div>
                             )}
 
-                            {/* If not AI mode and we found matched text, show it */}
-                            {/* {searchMode !== 'ai' && searchResult.context && (
-                                <div style={{ fontSize: '0.8rem', color: 'gray' }}>
-                                    Matched Text: {searchResult.context}
+                            {/* スコアを表示 */}
+                            {searchResult.score !== undefined && (
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                    Score: {(searchResult.score * 100).toFixed(2)}%
                                 </div>
-                            )} */}
+                            )}
 
-                            {/* If AI mode, show context */}
-                            {/* {searchMode === 'ai' && (
-                                <div style={{ fontSize: '0.8rem', color: 'gray' }}>
-                                    Context: {searchResult.context}
+                            {/* コンテキストを表示 */}
+                            {searchResult.context && (
+                                <div style={{ 
+                                    fontSize: '0.8rem', 
+                                    color: 'gray',
+                                    marginTop: '0.5rem',
+                                    padding: '0.5rem',
+                                    backgroundColor: '#f5f5f5',
+                                    borderRadius: '4px'
+                                }}>
+                                    {searchResult.context}
                                 </div>
-                            )} */}
+                            )}
                         </a>
                     </li>
                 );
@@ -65,4 +72,3 @@ export const BookmarksList: React.FC<BookmarksListProps> = ({
         </ul>
     );
 };
-

@@ -85,28 +85,14 @@ export const Bookmarks: React.FC = () => {
       try {
         let results: SearchResultItem[] = [];
         
-        if (searchMode === 'ai' && chunkData.length > 0) {
-          // AIモードの場合はaiSearchRepresentativeを使用
-          const representativeResults = await aiSearchRepresentative(searchTerm, chunkData, 5, abortController.signal);
-          
-          // RepresentativeSearchResultをSearchResultItemに変換
-          results = representativeResults.map(result => ({
-            highlightedTitle: result.title,
-            highlightedURL: result.url,
-            highlightedFolder: result.path.segments.join(' / '),
-            context: result.snippet,
-            score: result.similarity,
-            original: {
-              id: result.userId,
-              url: result.url,
-              path: createPath(result.path.segments),
-              searchString: result.snippet
-            }
-          }));
-        } else {
-          // その他のモードは通常の検索を使用
-          results = await baseSearchEngine(bookmarks, searchTerm, searchMode, abortController.signal);
-        }
+        // 全てのモードでbaseSearchEngineを使用
+        results = await baseSearchEngine(
+          bookmarks,
+          searchTerm,
+          searchMode,
+          abortController.signal,
+          chunkData
+        );
 
         if (!abortController.signal.aborted) {
           setFilteredBookmarks(results);
