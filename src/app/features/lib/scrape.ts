@@ -28,8 +28,19 @@ export default async function scrapeMain(
       const response = await fetch(url);
       const html = await response.text();
 
+      // HTMLかどうかの簡易チェック
+      if (!html.trim().toLowerCase().startsWith('<!doctype html') && 
+          !html.trim().toLowerCase().startsWith('<html')) {
+        console.warn(`Not an HTML document: ${url}`);
+        continue;
+      }
+
       // 2) linkedomでパース
-      const { document: doc } = parseHTML(html);
+      const { window } = parseHTML(html);
+      const doc = window.document;
+
+      // scriptタグを削除
+      doc.querySelectorAll('script').forEach(script => script.remove());
 
       // 3) タイトルや本文を複数セレクタで試す
       const postTitle =
@@ -67,5 +78,6 @@ export default async function scrapeMain(
     }
   }
 
-  return documents;
+  // エラーがあった場合や結果が空の場合は空配列を返す
+  return documents.length > 0 ? documents : [];
 }
