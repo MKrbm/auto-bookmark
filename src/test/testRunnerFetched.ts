@@ -1,8 +1,33 @@
 import { processFetchedBookmarks } from '../app/features/lib/runnerBookmarks_new';
 import { FetchedBookmark } from '../app/features/lib/fetchBookmarkTypes';
 import { aiSearchRepresentative } from '../app/features/search/aiSearchRepresentative';
+import { ChunkData } from '../app/features/lib/chunkTypes';
 
 console.log('=== testRunnerFetched.ts loaded ===');
+
+// テスト用のモックストレージを実装
+const mockStorage = {
+  data: {} as { [key: string]: any },
+  get(keys: string[]) {
+    return Promise.resolve(
+      keys.reduce((acc, key) => {
+        acc[key] = this.data[key];
+        return acc;
+      }, {} as { [key: string]: any })
+    );
+  },
+  set(items: { [key: string]: any }) {
+    Object.assign(this.data, items);
+    return Promise.resolve();
+  }
+};
+
+// chrome.storage.localのモック
+(window as any).chrome = {
+  storage: {
+    local: mockStorage
+  }
+};
 
 
 
@@ -43,6 +68,20 @@ async function runTest() {
     console.log('=== processFetchedBookmarks の実行 ===');
     console.log('=== 全てのchunkを出力 (syncボタンを押したとき何を保持しておくかという話) ===');
     const results = await processFetchedBookmarks(fetchedBookmarks);
+
+    // ユーザーデータとしてchunkを保存
+    await chrome.storage.local.set({
+      bookmarkChunks: results,
+      syncStatus: {
+        bookmarkCount: fetchedBookmarks.length,
+        chunkCount: results.length
+      }
+    });
+
+    // 保存したデータを取得して確認
+    const stored = await chrome.storage.local.get(['bookmarkChunks', 'syncStatus']);
+    console.log('=== 保存されたユーザーデータ ===');
+    console.log('Sync status:', stored.syncStatus);
 
     // chunk_vectorの先頭3要素だけを残し、見やすく整形して表示
     const shortResults = results.map((item) => ({

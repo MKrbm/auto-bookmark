@@ -28,8 +28,8 @@ const llm = new OpenAI({
 
 // テキスト分割
 const textSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 500,
-  chunkOverlap: 50,
+  chunkSize: 5000,
+  chunkOverlap: 500,
 });
 
 // Embeddingモデル (langchain/browser で動く想定)
@@ -45,7 +45,7 @@ const embedding_model = new OpenAIEmbeddings({
  * create_vectorsMain
  * - scrape.ts から返された Document[] を受け取り
  * - テキストを分割し Embedding を生成
- * - ブラウザ拡張のみ想定: localStorage に保存しつつ、チャンク情報を return
+ * - チャンク情報を return
  */
 export async function create_vectorsMain(
   docs: Document[],
@@ -78,22 +78,7 @@ export async function create_vectorsMain(
       chunk_vector: embeddings[index][0] || [],
     }));
 
-    // 4) ブラウザ拡張ではファイル操作できないので localStorage に書き込む
-    //    (必要に応じて chrome.storage.* に置き換えてもOK)
-    const storageKey = `${filename}_vector.txt`;
-
-    let fileContent = `${filename}\n${userTitle}\n`;
-    textAndVectorList.forEach(({ chunk_index, chunk_text, chunk_vector }) => {
-      fileContent += `Chunk Index: ${chunk_index}\n`;
-      fileContent += `Text:\n${chunk_text}\n`;
-      fileContent += `Vector:\n${JSON.stringify(chunk_vector)}\n\n`;
-    });
-
-    // localStorage書き込み
-    localStorage.setItem(storageKey, fileContent);
-    console.log(`[Vectors] Written => localStorage key = ${storageKey}`);
-
-    // 5) メモリ上でも返す
+    // 4) 結果を返す
     return textAndVectorList;
 
   } catch (error) {

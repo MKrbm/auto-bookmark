@@ -30,6 +30,20 @@ export const Bookmarks: React.FC = () => {
     });
   };
 
+  // 保存されているユーザーデータを取得
+  const loadUserData = async () => {
+    try {
+      const result = await chrome.storage.local.get(['bookmarkChunks']);
+      if (result.bookmarkChunks) {
+        console.log('Loaded bookmark chunks from storage');
+        setChunkData(result.bookmarkChunks);
+      }
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+      setSyncError('Failed to load saved bookmarks');
+    }
+  };
+
   const syncBookmarks = async () => {
     setIsSyncing(true);
     setSyncError(null);
@@ -49,28 +63,39 @@ export const Bookmarks: React.FC = () => {
       // processFetchedBookmarksで処理
       const processedChunks = await processFetchedBookmarks(fetchedData);
       
-      // 処理結果をストレージに保存
-      await chrome.storage.local.set({ chunkData: processedChunks });
+      // ユーザーデータとして保存
+      await chrome.storage.local.set({
+        bookmarkChunks: processedChunks,
+        syncStatus: {
+          bookmarkCount: fetchedData.length,
+          chunkCount: processedChunks.length
+        }
+      });
       
       // 状態を更新
       setChunkData(processedChunks);
+      console.log('Successfully synced and saved bookmark chunks');
       
     } catch (error) {
       console.error('Sync error:', error);
       setSyncError(error instanceof Error ? error.message : 'An error occurred during sync');
+      
+      // エラー情報も保存
+      await chrome.storage.local.set({
+        syncStatus: {
+          lastError: Date.now(),
+          errorMessage: error instanceof Error ? error.message : 'Unknown error'
+        }
+      });
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // 初期ロード時にブックマークとチャンクデータを取得
+  // 初期ロード時にブックマークとユーザーデータを取得
   useEffect(() => {
     fetchBookmarks();
-    chrome.storage.local.get('chunkData', (result) => {
-      if (result.chunkData) {
-        setChunkData(result.chunkData);
-      }
-    });
+    loadUserData();
   }, []);
 
   useEffect(() => {

@@ -50,16 +50,6 @@ export async function processFetchedBookmarks(
         chunk_vector: chunk.chunk_vector
       });
 
-      // LocalStorageに保存（キーはURL_チャンク番号）
-      const storageKey = `${item.url}_${chunk.chunk_index}`;
-      localStorage.setItem(storageKey, JSON.stringify({
-        userId: item.userid,
-        url: item.url,
-        path: item.path,
-        chunk_index: chunk.chunk_index,
-        chunk_text: chunk.chunk_text,
-        chunk_vector: chunk.chunk_vector
-      }));
     }
   }
 
