@@ -8,8 +8,8 @@ import { OpenAIEmbeddings } from "@langchain/openai";
  * 環境変数的に取得できない場合はベタ書き or chrome.storage 経由のキーを使うなど 
  * セキュリティリスクに注意
  */
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
-// const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
+// APIキーを環境変数から取得
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
 
 // Document型 (scrape.ts と同じ構造)
 interface Document {

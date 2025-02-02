@@ -2,7 +2,7 @@ import { ChunkData } from '../lib/chunkTypes';
 import { OpenAIEmbeddings } from "@langchain/openai";
 
 const embeddingModel = new OpenAIEmbeddings({
-  openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+  openAIApiKey: process.env.OPENAI_API_KEY || '',
   model: "text-embedding-3-large",
   dimensions: 1024,
 });

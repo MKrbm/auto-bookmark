@@ -95,7 +95,7 @@ async function runTest() {
     console.log(JSON.stringify(shortResults, null, 2));
 
     // 2. 次にaiSearchRepresentativeで「物理学」を検索
-    console.log('=== aiSearchEngineでの検索の動作テスト ===');
+    console.log('=== aiSearchEngine(aiSearchRepresentative)での検索の動作テスト ===');
     console.log('\n=== 「物理学」での検索結果 ===');
     const searchResults = await aiSearchRepresentative('物理学', results, 5);
     // スニペットは200文字で切り詰められているので、そのまま表示
@@ -114,4 +114,28 @@ async function runTest() {
 
 document.addEventListener('DOMContentLoaded', () => {
   runTest();
+});
+
+describe('AI検索のランキングテスト', () => {
+  // 順位の期待リスト
+  const expectedRanking = [
+    "http://fnorio.com/0074trichromatism1/trichromatism1.html", // 1位に期待
+    "https://docs.dwavesys.com/docs/latest/c_gs_2.html",        // 2位
+    "https://www.langchain.com/"                                // 3位
+  ];
+
+  it('should rank "物理学" in the order of fnorio -> dwave -> langchain', async () => {
+    // 通常どおり processFetchedBookmarks でチャンクセットを作る
+    const chunks = await processFetchedBookmarks(fetchedBookmarks);
+
+    // AI検索（Embedding 類似度計算）
+    const searchResults = await aiSearchRepresentative('物理学', chunks, 10);
+
+    // 期待順位と比較
+    for (let i = 0; i < expectedRanking.length; i++) {
+      const expectedUrl = expectedRanking[i];
+      // テスト上は、検索結果が "i" 番目(=i番目の順位) に expectedUrl があることを期待
+      expect(searchResults[i].url).toBe(expectedUrl);
+    }
+  });
 });

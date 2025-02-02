@@ -30,7 +30,6 @@ const manifest = defineManifest((env) => {
                     'welcome/welcome.html',
                     'popup/popup.html',
                     'options/options.html',
-                    'test/test.html',
                     'test/testFetched.html'
                 ],
                 matches: ['<all_urls>'],
@@ -68,7 +67,6 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 welcome: join(__dirname, 'src/welcome/welcome.html'),
-                test: join(__dirname, 'src/test/test.html'),
                 testFetched: join(__dirname, 'src/test/testFetched.html'),
             },
             output: {
