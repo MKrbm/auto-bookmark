@@ -2,7 +2,7 @@ import { ChunkData } from '../lib/chunkTypes';
 import { OpenAIEmbeddings } from "@langchain/openai";
 
 const embeddingModel = new OpenAIEmbeddings({
-  openAIApiKey: process.env.OPENAI_API_KEY || '',
+  openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
   model: "text-embedding-3-large",
   dimensions: 1024,
 });
@@ -51,13 +51,16 @@ export async function aiSearchRepresentative(
   }
 
   // 1) input を Embedding (1回)
+  console.time('embedding-generation');
   const [queryEmbedding] = await embeddingModel.embedDocuments([input]);
+  console.timeEnd('embedding-generation');
   if (signal?.aborted) {
     console.log('[aiSearchRepresentative] Aborted after query embedding');
     return [];
   }
 
   // 2) URLをキーに、{ bestSimilarity, snippet, title } を追跡するマップ
+  console.time('similarity-calculation');
   const urlBest: Record<string, {
     bestSimilarity: number;
     snippet: string;
@@ -86,8 +89,10 @@ export async function aiSearchRepresentative(
       }
     }
   }
+  console.timeEnd('similarity-calculation');
 
   // 3) マップを配列化し、similarity降順でソート
+  console.time('sort-results');
   const results = Object.entries(urlBest).map(([url, info]) => ({
     url,
     title: info.title,
@@ -99,5 +104,7 @@ export async function aiSearchRepresentative(
   results.sort((a, b) => b.similarity - a.similarity);
 
   // 4) 上位N件
-  return results.slice(0, topN);
+  const finalResults = results.slice(0, topN);
+  console.timeEnd('sort-results');
+  return finalResults;
 }

@@ -9,7 +9,7 @@ import { OpenAIEmbeddings } from "@langchain/openai";
  * セキュリティリスクに注意
  */
 // APIキーを環境変数から取得
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
 
 // Document型 (scrape.ts と同じ構造)
 interface Document {
@@ -56,22 +56,27 @@ export async function create_vectorsMain(
   chunk_text: string;
   chunk_vector: number[];
 }[]> {
-  try {
-    // 1) テキスト分割
-    const allSplits = await textSplitter.splitDocuments(
+    try {
+      // 1) テキスト分割
+      console.time('text-splitting');
+      const allSplits = await textSplitter.splitDocuments(
       docs.map(doc => ({
         pageContent: doc.page_content,
         metadata: doc.metadata,
       }))
     );
+    console.timeEnd('text-splitting');
 
     // 2) チャンクごとに Embedding
+    console.time('chunks-embedding');
     //    embedDocuments() は 2次元配列[ [vector], [vector], ... ] を返す想定
     const embeddings = await Promise.all(
       allSplits.map(chunk => embedding_model.embedDocuments([chunk.pageContent]))
     );
+    console.timeEnd('chunks-embedding');
 
     // 3) (index, text, vector) の形でまとめる
+    console.time('data-formatting');
     const textAndVectorList = allSplits.map((chunk, index) => ({
       chunk_index: index,
       chunk_text: chunk.pageContent.replace(/\n/g, ' '),
@@ -79,6 +84,7 @@ export async function create_vectorsMain(
     }));
 
     // 4) 結果を返す
+    console.timeEnd('data-formatting');
     return textAndVectorList;
 
   } catch (error) {
