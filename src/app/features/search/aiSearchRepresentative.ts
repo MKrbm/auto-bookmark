@@ -51,16 +51,16 @@ export async function aiSearchRepresentative(
   }
 
   // 1) input を Embedding (1回)
-  console.time('embedding-generation');
+  console.time(`query-embedding-generation (query: "${input.slice(0, 30)}${input.length > 30 ? '...' : ''}")`);
   const [queryEmbedding] = await embeddingModel.embedDocuments([input]);
-  console.timeEnd('embedding-generation');
+  console.timeEnd(`query-embedding-generation (query: "${input.slice(0, 30)}${input.length > 30 ? '...' : ''}")`);
   if (signal?.aborted) {
     console.log('[aiSearchRepresentative] Aborted after query embedding');
     return [];
   }
 
   // 2) URLをキーに、{ bestSimilarity, snippet, title } を追跡するマップ
-  console.time('similarity-calculation');
+  console.time(`similarity-calculation (${chunks.length} chunks)`);
   const urlBest: Record<string, {
     bestSimilarity: number;
     snippet: string;
@@ -89,10 +89,10 @@ export async function aiSearchRepresentative(
       }
     }
   }
-  console.timeEnd('similarity-calculation');
+  console.timeEnd(`similarity-calculation (${chunks.length} chunks)`);
 
   // 3) マップを配列化し、similarity降順でソート
-  console.time('sort-results');
+  console.time(`sort-results (${Object.keys(urlBest).length} URLs)`);
   const results = Object.entries(urlBest).map(([url, info]) => ({
     url,
     title: info.title,
@@ -105,6 +105,7 @@ export async function aiSearchRepresentative(
 
   // 4) 上位N件
   const finalResults = results.slice(0, topN);
-  console.timeEnd('sort-results');
+  console.timeEnd(`sort-results (${Object.keys(urlBest).length} URLs)`);
+  console.log('Top results:', finalResults.map(r => `${r.title} (${r.url})`));
   return finalResults;
 }

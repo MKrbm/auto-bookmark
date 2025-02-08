@@ -57,26 +57,30 @@ export async function create_vectorsMain(
   chunk_vector: number[];
 }[]> {
     try {
+      // URLとタイトルを取得
+      const url = docs[0]?.metadata.url || 'Unknown URL';
+      const title = docs[0]?.metadata.title || 'Unknown Title';
+      
       // 1) テキスト分割
-      console.time('text-splitting');
+      console.time(`text-splitting (${title})`);
       const allSplits = await textSplitter.splitDocuments(
       docs.map(doc => ({
         pageContent: doc.page_content,
         metadata: doc.metadata,
       }))
     );
-    console.timeEnd('text-splitting');
+    console.timeEnd(`text-splitting (${title})`);
 
     // 2) チャンクごとに Embedding
-    console.time('chunks-embedding');
+    console.time(`document-embedding-generation (${title})`);
     //    embedDocuments() は 2次元配列[ [vector], [vector], ... ] を返す想定
     const embeddings = await Promise.all(
       allSplits.map(chunk => embedding_model.embedDocuments([chunk.pageContent]))
     );
-    console.timeEnd('chunks-embedding');
+    console.timeEnd(`document-embedding-generation (${title})`);
 
     // 3) (index, text, vector) の形でまとめる
-    console.time('data-formatting');
+    console.time(`data-formatting (${title})`);
     const textAndVectorList = allSplits.map((chunk, index) => ({
       chunk_index: index,
       chunk_text: chunk.pageContent.replace(/\n/g, ' '),
@@ -84,7 +88,8 @@ export async function create_vectorsMain(
     }));
 
     // 4) 結果を返す
-    console.timeEnd('data-formatting');
+    console.timeEnd(`data-formatting (${title})`);
+    console.log(`Processed: ${url}`);
     return textAndVectorList;
 
   } catch (error) {
