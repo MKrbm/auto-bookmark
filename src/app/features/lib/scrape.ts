@@ -1,6 +1,27 @@
 // scrape.ts
 import { parseHTML } from 'linkedom';
 
+/**
+ * HTMLエンティティをデコードし、テキストを正規化
+ * - HTMLエンティティを実際の文字列に変換
+ * - 改行・連続スペースを正規化
+ * @param text 正規化する文字列
+ * @returns 正規化された文字列
+ */
+function cleanText(text: string): string {
+  // HTMLエンティティをデコード
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = text;
+  const decoded = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // 改行・連続スペースを正規化（見出しの改行は保持）
+  return decoded
+    .split(/\n+/)
+    .map(line => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
 // Document型は変えずに利用
 interface Document {
   page_content: string;
@@ -39,30 +60,48 @@ export default async function scrapeMain(
       const { window } = parseHTML(html);
       const doc = window.document;
 
-      // scriptタグを削除
-      doc.querySelectorAll('script').forEach(script => script.remove());
+      // 不要なタグを削除（noscriptは除外）
+      const tagsToRemove = ['script', 'style', 'svg', 'iframe'];
+      tagsToRemove.forEach(tag => {
+        doc.querySelectorAll(tag).forEach(el => el.remove());
+      });
 
-      // 3) タイトルや本文を複数セレクタで試す
-      const postTitle =
-        doc.querySelector('.post-title')?.textContent ||
-        doc.querySelector('h1')?.textContent ||
-        doc.querySelector('title')?.textContent ||
-        '';
-      const postHeader =
-        doc.querySelector('.post-header')?.textContent ||
-        doc.querySelector('header')?.textContent ||
-        doc.querySelector('h2')?.textContent ||
-        '';
-      const postContent =
+      // 3) コンテンツを階層的に抽出
+      const extractHeadingContent = (selector: string, prefix: string) => {
+        const element = doc.querySelector(selector);
+        return element?.textContent ? `${prefix} ${element.textContent.trim()}` : '';
+      };
+
+      // 見出しを階層的に取得
+      const headings: string[] = [];
+      for (let i = 1; i <= 6; i++) {
+        doc.querySelectorAll(`h${i}`).forEach(heading => {
+          const text = heading.textContent?.trim() || '';
+          if (text) {
+            headings.push(`${'#'.repeat(i)} ${text}`);
+          }
+        });
+      }
+
+      // メインコンテンツを取得
+      const mainContent = 
         doc.querySelector('.post-content')?.textContent ||
         doc.querySelector('article')?.textContent ||
         doc.querySelector('main')?.textContent ||
-        doc.querySelector('body')?.textContent ||
         '';
 
+      // フォールバックとしてbodyを使用
+      const bodyContent = !mainContent ? doc.querySelector('body')?.textContent || '' : '';
+
       // 4) テキストが取得できた場合のみ追加
-      if (postTitle || postHeader || postContent) {
-        const pageContent = `${postTitle}\n${postHeader}\n${postContent}`.trim();
+      if (headings.length > 0 || mainContent || bodyContent) {
+        // 見出しとコンテンツを結合
+        const pageContent = cleanText([
+          extractHeadingContent('.post-title', '#'),
+          extractHeadingContent('title', '#'),
+          ...headings,
+          mainContent || bodyContent
+        ].filter(Boolean).join('\n'));
         const metadata = {
           url,
           title: doc.querySelector('title')?.textContent || '',

@@ -266,6 +266,79 @@ describe('scrapeMain', () => {
     expect(result[0].metadata.userTitle).toBe('Tech Blog');
   });
 
+  // 見出し階層と特殊タグのテスト
+  test('見出し階層の保持と特殊タグの処理', async () => {
+    const mockHTML = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>階層構造テスト</title>
+          <style>
+            body { color: red; }
+          </style>
+        </head>
+        <body>
+          <h1>メインタイトル</h1>
+          <noscript>
+            <h2>JavaScript無効時の見出し</h2>
+            <p>重要なフォールバックコンテンツ</p>
+          </noscript>
+          <div class="content">
+            <h2>セクション1</h2>
+            <p>セクション1の内容</p>
+            <h3>サブセクション1.1</h3>
+            <p>サブセクション1.1の内容</p>
+            <h4>詳細1.1.1</h4>
+            <p>詳細1.1.1の内容</p>
+            <h5>補足1.1.1.1</h5>
+            <p>補足1.1.1.1の内容</p>
+            <h6>メモ1.1.1.1.1</h6>
+            <p>メモ1.1.1.1.1の内容</p>
+          </div>
+          <svg>
+            <circle cx="50" cy="50" r="40" />
+          </svg>
+        </body>
+      </html>
+    `;
+
+    // fetchのモックを設定
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        text: () => Promise.resolve(mockHTML),
+        status: 200,
+      } as Response)
+    );
+
+    const result = await scrapeMain(['http://example.com/hierarchy'], 'Hierarchy Test');
+    const content = result[0].page_content;
+
+    // 見出しの階層構造を確認
+    expect(content).toContain('# メインタイトル');
+    expect(content).toContain('## JavaScript無効時の見出し');
+    expect(content).toContain('## セクション1');
+    expect(content).toContain('### サブセクション1.1');
+    expect(content).toContain('#### 詳細1.1.1');
+    expect(content).toContain('##### 補足1.1.1.1');
+    expect(content).toContain('###### メモ1.1.1.1.1');
+
+    // noscriptの内容が保持されていることを確認
+    expect(content).toContain('重要なフォールバックコンテンツ');
+
+    // 不要なタグが削除されていることを確認
+    expect(content).not.toContain('color: red');
+    expect(content).not.toContain('circle');
+
+    // 見出しの順序が正しいことを確認
+    const lines = content.split('\n');
+    const h1Index = lines.findIndex(line => line.startsWith('# メイン'));
+    const h2Index = lines.findIndex(line => line.startsWith('## セクション'));
+    const h3Index = lines.findIndex(line => line.startsWith('### サブ'));
+    expect(h1Index).toBeLessThan(h2Index);
+    expect(h2Index).toBeLessThan(h3Index);
+  });
+
   test('実在するドキュメントサイトのスクレイピング', async () => {
     const mockDocsHTML = `
       <!DOCTYPE html>
