@@ -33,7 +33,6 @@ function cleanText(text: string): string {
     .join('\n');
 }
 
-// Document型は変えずに利用
 interface Document {
   page_content: string;
   metadata: {

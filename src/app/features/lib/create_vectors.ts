@@ -21,10 +21,6 @@ interface Document {
   };
 }
 
-// LLMモデル（実際は未使用でもOK）
-const llm = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
 
 // テキスト分割
 const textSplitter = new RecursiveCharacterTextSplitter({
