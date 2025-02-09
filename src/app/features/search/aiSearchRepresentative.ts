@@ -1,11 +1,21 @@
 import { ChunkData } from '../lib/chunkTypes';
 import { OpenAIEmbeddings } from "@langchain/openai";
+import { defaultEmbeddingConfig } from '../lib/config/embeddingConfig';
 
-const embeddingModel = new OpenAIEmbeddings({
-  openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  model: "text-embedding-3-large",
-  dimensions: 1024,
-});
+interface SearchConfig {
+  model?: string;
+  dimensions?: number;
+  topN?: number;
+  snippetLength?: number;
+}
+
+function createEmbeddingModel(config: SearchConfig = {}) {
+  return new OpenAIEmbeddings({
+    openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+    model: config.model || defaultEmbeddingConfig.model,
+    dimensions: config.dimensions || defaultEmbeddingConfig.dimensions,
+  });
+}
 
 function calculateCosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
@@ -39,7 +49,7 @@ export interface RepresentativeSearchResult {
 export async function aiSearchRepresentative(
   input: string,
   chunks: ChunkData[],
-  topN: number = 5,
+  config: SearchConfig = {},
   signal?: AbortSignal
 ): Promise<RepresentativeSearchResult[]> {
   if (!input.trim()) {
@@ -49,6 +59,10 @@ export async function aiSearchRepresentative(
     console.log('[aiSearchRepresentative] Aborted before embedding');
     return [];
   }
+
+  const embeddingModel = createEmbeddingModel(config);
+  const topN = config.topN || defaultEmbeddingConfig.topN;
+  const snippetLength = config.snippetLength || defaultEmbeddingConfig.snippetLength;
 
   // 1) input を Embedding (1回)
   console.time(`query-embedding-generation (query: "${input.slice(0, 30)}${input.length > 30 ? '...' : ''}")`);
@@ -76,7 +90,7 @@ export async function aiSearchRepresentative(
     if (!urlBest[chunk.url]) {
       urlBest[chunk.url] = {
         bestSimilarity: similarity,
-        snippet: chunk.chunk_text.slice(0, 200), // 先頭200文字
+        snippet: chunk.chunk_text.slice(0, snippetLength),
         title: chunk.path.name,
         userId: chunk.userId,
         path: chunk.path
@@ -85,7 +99,7 @@ export async function aiSearchRepresentative(
       // 既にある場合、最高スコアを更新
       if (similarity > urlBest[chunk.url].bestSimilarity) {
         urlBest[chunk.url].bestSimilarity = similarity;
-        urlBest[chunk.url].snippet = chunk.chunk_text.slice(0, 200);
+        urlBest[chunk.url].snippet = chunk.chunk_text.slice(0, snippetLength);
       }
     }
   }

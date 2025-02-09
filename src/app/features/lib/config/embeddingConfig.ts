@@ -7,6 +7,11 @@ export const defaultEmbeddingConfig = {
   // 埋め込みモデル設定
   model: "text-embedding-3-large",
   dimensions: 1024,
+
+  // 検索結果設定
+  sort: "desc" as const,
+  topN: 5,
+  snippetLength: 200,
   
   // バッチ処理設定
   batchSize: 16,
