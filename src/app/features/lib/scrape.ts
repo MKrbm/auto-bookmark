@@ -5,6 +5,8 @@ import { parseHTML } from 'linkedom';
  * HTMLエンティティをデコードし、テキストを正規化
  * - HTMLエンティティを実際の文字列に変換
  * - 改行・連続スペースを正規化
+ * - 制御文字を除去
+ * - 文字化け対策
  * @param text 正規化する文字列
  * @returns 正規化された文字列
  */
@@ -12,7 +14,16 @@ function cleanText(text: string): string {
   // HTMLエンティティをデコード
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = text;
-  const decoded = tempDiv.textContent || tempDiv.innerText || '';
+  let decoded = tempDiv.textContent || tempDiv.innerText || '';
+  
+  // 制御文字を除去（改行とタブ以外）
+  decoded = decoded.replace(/[\x00-\x09\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  
+  // 全角スペースを半角に統一
+  decoded = decoded.replace(/\u3000/g, ' ');
+  
+  // サロゲートペア文字を正しく処理
+  decoded = Array.from(decoded).join('');
   
   // 改行・連続スペースを正規化（見出しの改行は保持）
   return decoded
@@ -36,6 +47,7 @@ interface Document {
  * scrapeMain
  * - Service Workerでも動作可能
  * - fetch + linkedom でHTMLを取得し、タイトルや本文を抽出
+ * - 文字化け対策済み
  */
 export default async function scrapeMain(
   urls: string[],
@@ -47,7 +59,40 @@ export default async function scrapeMain(
     try {
       // 1) fetchでHTMLを取得
       const response = await fetch(url);
-      const html = await response.text();
+      
+      // Content-Typeヘッダーからエンコーディングを取得
+      const contentType = response.headers.get('content-type');
+      let charset = contentType?.match(/charset=([^;]+)/i)?.[1]?.toLowerCase() || 'utf-8';
+      
+      // Shift_JISやEUC-JPの場合はブラウザ互換の名前に変換
+      if (charset === 'shift_jis' || charset === 'shift-jis' || charset === 'x-sjis') {
+        charset = 'shift_jis';
+      } else if (charset === 'euc-jp') {
+        charset = 'euc-jp';
+      }
+      
+      // レスポンスをBlobとして取得し、適切なエンコーディングで処理
+      const blob = await response.blob();
+      let html = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsText(blob, charset);
+      });
+
+      // メタタグからエンコーディングを確認（HTML内で指定されている場合）
+      const metaCharset = html.match(/<meta[^>]+charset=["']?([^"'>]+)/i)?.[1]?.toLowerCase();
+      if (metaCharset && metaCharset !== charset) {
+        // メタタグで指定されたエンコーディングが異なる場合は再度読み込み
+        const reader = new FileReader();
+        const newHtml = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsText(blob, metaCharset);
+        });
+        // より多くの文字が正しく読み込めた場合は新しい結果を使用
+        if (newHtml.length > html.length) {
+          html = newHtml;
+        }
+      }
 
       // HTMLかどうかの簡易チェック
       if (!html.trim().toLowerCase().startsWith('<!doctype html') && 
