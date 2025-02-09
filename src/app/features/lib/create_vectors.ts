@@ -3,6 +3,7 @@
 import { OpenAI } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "@langchain/openai";
+import { defaultEmbeddingConfig, type EmbeddingConfig } from './config/embeddingConfig';
 
 /** 
  * 環境変数的に取得できない場合はベタ書き or chrome.storage 経由のキーを使うなど 
@@ -21,21 +22,31 @@ interface Document {
   };
 }
 
+// テキスト分割とEmbeddingモデルの初期化関数
+function initializeModels(config: Partial<EmbeddingConfig> = {}) {
+  // デフォルト設定とマージ
+  const finalConfig = { ...defaultEmbeddingConfig, ...config };
 
-// テキスト分割
-const textSplitter = new RecursiveCharacterTextSplitter({
-  chunkSize: 5000,
-  chunkOverlap: 500,
-});
+  // テキスト分割
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: finalConfig.chunkSize,
+    chunkOverlap: finalConfig.chunkOverlap,
+    lengthFunction: finalConfig.lengthFunction,
+  });
 
-// Embeddingモデル (langchain/browser で動く想定)
-// ただし Node.js 専用機能が混ざっている場合は要ブラウザ用モジュール
-const embedding_model = new OpenAIEmbeddings({
-  openAIApiKey: OPENAI_API_KEY,
-  // "text-embedding-ada-002" 等を指定することが多い
-  model: "text-embedding-3-large",
-  dimensions: 1024,
-});
+  // Embeddingモデル (langchain/browser で動く想定)
+  const embedding_model = new OpenAIEmbeddings({
+    openAIApiKey: OPENAI_API_KEY,
+    model: finalConfig.model,
+    dimensions: finalConfig.dimensions,
+    batchSize: finalConfig.batchSize,
+    stripNewLines: finalConfig.stripNewLines,
+    timeout: finalConfig.timeout,
+    maxRetries: finalConfig.max_retries,
+  });
+
+  return { textSplitter, embedding_model };
+}
 
 /**
  * create_vectorsMain
@@ -46,7 +57,8 @@ const embedding_model = new OpenAIEmbeddings({
 export async function create_vectorsMain(
   docs: Document[],
   filename: string,
-  userTitle: string
+  userTitle: string,
+  config: Partial<EmbeddingConfig> = {}
 ): Promise<{
   chunk_index: number;
   chunk_text: string;
@@ -56,6 +68,9 @@ export async function create_vectorsMain(
       // URLとタイトルを取得
       const url = docs[0]?.metadata.url || 'Unknown URL';
       const title = docs[0]?.metadata.title || 'Unknown Title';
+      
+      // モデルの初期化
+      const { textSplitter, embedding_model } = initializeModels(config);
       
       // 1) テキスト分割
       console.time(`text-splitting (${title})`);
