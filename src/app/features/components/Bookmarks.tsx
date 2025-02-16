@@ -8,8 +8,8 @@ import { flattenBookmarks } from '../lib/utils';
 import { Bookmark } from '../lib/types';
 import { baseSearchEngine, SearchResultItem } from '../search/baseSearchEngine';
 import { ChunkData } from '../lib/chunkTypes';
-import { aiSearchRepresentative } from '../search/aiSearchRepresentative';
-import { createPath } from '../lib/path';
+// import { aiSearchRepresentative } from '../search/aiSearchRepresentative';
+// import { createPath } from '../lib/path';
 
 export const Bookmarks: React.FC = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);

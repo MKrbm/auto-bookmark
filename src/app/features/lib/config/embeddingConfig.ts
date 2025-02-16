@@ -5,7 +5,7 @@ export const defaultEmbeddingConfig = {
   chunkOverlap: 500,
   
   // 埋め込みモデル設定
-  model: "text-embedding-3-large",
+  model: "text-embedding-3-small",
   dimensions: 1024,
 
   // 検索結果設定
