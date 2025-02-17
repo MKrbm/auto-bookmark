@@ -58,9 +58,9 @@ export default defineConfig({
     root: resolve(__dirname, 'src'),
     publicDir: resolve(__dirname, 'public'),
     
-    server: {
-        hmr: false  // HMRを無効化
-    },
+    // server: {
+    //hmr: false  // HMRを無効化
+    // },
 
     build: {
         outDir: resolve(__dirname, 'dist'),
