@@ -1,9 +1,10 @@
-import { processFetchedBookmarks } from '../app/features/lib/runnerBookmarks_new';
-import { FetchedBookmark } from '../app/features/lib/fetchBookmarkTypes';
-import { aiSearchRepresentative } from '../app/features/search/aiSearchRepresentative';
-import { ChunkData } from '../app/features/lib/chunkTypes';
+import { processFetchedBookmarks } from '../../app/features/lib/runnerBookmarks_new';
+import { FetchedBookmark } from '../../app/features/lib/fetchBookmarkTypes';
+import { aiSearchRepresentative } from '../../app/features/search/aiSearchRepresentative';
+import { ChunkData } from '../../app/features/lib/chunkTypes';
 
-console.log('=== testRunnerFetched.ts loaded ===');
+// テスト環境かどうかを判定
+const isTestEnvironment = typeof jest !== 'undefined';
 
 // テスト用のモックストレージを実装
 const mockStorage = {
@@ -22,12 +23,28 @@ const mockStorage = {
   }
 };
 
-// chrome.storage.localのモック
-(window as any).chrome = {
-  storage: {
-    local: mockStorage
+// chrome APIのモックを設定
+const setupMockChrome = () => {
+  if (typeof window !== 'undefined') {
+    (window as any).chrome = {
+      storage: {
+        local: mockStorage
+      }
+    };
   }
+  return mockStorage;
 };
+
+// テスト環境の場合はグローバルにモックを設定
+if (isTestEnvironment) {
+  (global as any).chrome = {
+    storage: {
+      local: mockStorage
+    }
+  };
+} else {
+  setupMockChrome();
+}
 
 
 
@@ -84,7 +101,7 @@ async function runTest() {
     console.log('Sync status:', stored.syncStatus);
 
     // chunk_vectorの先頭3要素だけを残し、見やすく整形して表示
-    const shortResults = results.map((item) => ({
+    const shortResults = results.map((item: ChunkData) => ({
       userId: item.userId,
       url: item.url,
       path: item.path,
@@ -97,12 +114,12 @@ async function runTest() {
     // 2. 次にaiSearchRepresentativeで「物理学」を検索
     console.log('=== aiSearchEngine(aiSearchRepresentative)での検索の動作テスト ===');
     console.log('\n=== 「物理学」での検索結果 ===');
-    const searchResults = await aiSearchRepresentative('物理学', results, 5);
+    const searchResults = await aiSearchRepresentative('物理学', results, { topN: 5 });
     // スニペットは200文字で切り詰められているので、そのまま表示
     console.log(JSON.stringify(searchResults, null, 2));
     
     // 類似度スコアの範囲を確認
-    const scores = searchResults.map(r => r.similarity);
+    const scores = searchResults.map((r: { similarity: number }) => r.similarity);
     console.log('\n=== 類似度スコア ===');
     console.log(`最大: ${Math.max(...scores).toFixed(4)}`);
     console.log(`最小: ${Math.min(...scores).toFixed(4)}`);
@@ -112,9 +129,13 @@ async function runTest() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  runTest();
-});
+// ブラウザ環境の場合のみDOMContentLoadedイベントを設定
+if (!isTestEnvironment && typeof document !== 'undefined') {
+  console.log('=== testRunnerFetched.test.ts loaded ===');
+  document.addEventListener('DOMContentLoaded', () => {
+    runTest();
+  });
+}
 
 describe('AI検索のランキングテスト', () => {
   // 順位の期待リスト
@@ -129,7 +150,7 @@ describe('AI検索のランキングテスト', () => {
     const chunks = await processFetchedBookmarks(fetchedBookmarks);
 
     // AI検索（Embedding 類似度計算）
-    const searchResults = await aiSearchRepresentative('物理学', chunks, 10);
+    const searchResults = await aiSearchRepresentative('物理学', chunks, { topN: 10 });
 
     // 期待順位と比較
     for (let i = 0; i < expectedRanking.length; i++) {

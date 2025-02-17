@@ -9,6 +9,7 @@ export default {
   },
   testMatch: [
     '**/__tests__/**/*.test.[jt]s?(x)',
+    'src/test/**/*.test.[jt]s?(x)',
   ],
   setupFiles: ['<rootDir>/jest.setup.ts'],
   moduleNameMapper: {

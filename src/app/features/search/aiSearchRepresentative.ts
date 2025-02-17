@@ -11,7 +11,9 @@ interface SearchConfig {
 
 function createEmbeddingModel(config: SearchConfig = {}) {
   return new OpenAIEmbeddings({
-    openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+    openAIApiKey: process?.env?.OPENAI_API_KEY || 
+      (typeof window !== 'undefined' ? (window as any).import?.meta?.env?.VITE_OPENAI_API_KEY : undefined) || 
+      '',
     model: config.model || defaultEmbeddingConfig.model,
     dimensions: config.dimensions || defaultEmbeddingConfig.dimensions,
   });

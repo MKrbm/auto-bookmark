@@ -9,8 +9,10 @@ import { defaultEmbeddingConfig, type EmbeddingConfig } from './config/embedding
  * 環境変数的に取得できない場合はベタ書き or chrome.storage 経由のキーを使うなど 
  * セキュリティリスクに注意
  */
-// APIキーを環境変数から取得
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
+// APIキーを環境変数から取得（テスト環境とブラウザ環境の両方に対応）
+const OPENAI_API_KEY = process?.env?.OPENAI_API_KEY || 
+  (typeof window !== 'undefined' ? (window as any).import?.meta?.env?.VITE_OPENAI_API_KEY : undefined) || 
+  "YOUR_OPENAI_API_KEY";
 
 // Document型 (scrape.ts と同じ構造)
 interface Document {
