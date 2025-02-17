@@ -57,6 +57,11 @@ const manifest = defineManifest((env) => {
 export default defineConfig({
     root: resolve(__dirname, 'src'),
     publicDir: resolve(__dirname, 'public'),
+    define: {
+        'process.env': {
+            OPENAI_API_KEY: JSON.stringify(process.env.OPENAI_API_KEY)
+        },
+    },
     
     // server: {
     //hmr: false  // HMRを無効化
