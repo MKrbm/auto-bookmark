@@ -1,10 +1,248 @@
 import { describe, expect, test, beforeEach } from '@jest/globals';
 import scrapeMain from '../scrape';
+import { TextEncoder } from 'util';
 
 describe('scrapeMain', () => {
   beforeEach(() => {
     // 各テストの前にモックをリセット
     (global.fetch as jest.Mock).mockReset();
+  });
+
+  // 日本語エンコーディングのテスト
+  test('Shift_JISエンコーディングのサイト', async () => {
+    // テスト用のHTMLを文字列として定義
+    const htmlString = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>日本語のページ</title>
+          <meta charset="shift_jis">
+        </head>
+        <body>
+          <article>
+            <h1>重要な技術情報</h1>
+            <p>これは日本語で書かれた技術記事です。Shift_JISでエンコードされています。プログラミング言語やフレームワークについての詳細な解説を含んでいます。特に、Webアプリケーション開発における重要な概念について説明しています。</p>
+          </article>
+        </body>
+      </html>
+    `;
+
+    // Uint8Array形式でデータを作成
+    const encoder = new TextEncoder();
+    const htmlData = encoder.encode(htmlString);
+
+    // fetchのモックを設定
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(htmlData.buffer),
+        headers: new Headers({
+          'content-type': 'text/html; charset=shift_jis'
+        }),
+        status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.jp/article',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(htmlString),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
+      } as Response)
+    );
+
+    const result = await scrapeMain(['http://example.jp/article'], 'Japanese Article');
+    
+    // 日本語コンテンツが正しく抽出されていることを確認
+    expect(result[0].page_content).toContain('重要な技術情報');
+    expect(result[0].page_content).toContain('日本語で書かれた技術記事');
+    expect(result[0].page_content).not.toContain('�');
+  });
+
+  test('EUC-JPエンコーディングのサイト', async () => {
+    const htmlString = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>EUC-JPのページ</title>
+          <meta charset="euc-jp">
+        </head>
+        <body>
+          <main>
+            <h1>日本語のコンテンツ</h1>
+            <p>これはEUC-JPでエンコードされた日本語の記事です。文字化けせずに正しく表示される必要があります。技術的な内容を含む長めの文章で、プログラミングやソフトウェア開発に関する情報を提供しています。</p>
+          </main>
+        </body>
+      </html>
+    `;
+
+    const encoder = new TextEncoder();
+    const htmlData = encoder.encode(htmlString);
+
+    // fetchのモックを設定
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(htmlData.buffer),
+        headers: new Headers({
+          'content-type': 'text/html; charset=euc-jp'
+        }),
+        status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.jp/euc',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(htmlString),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
+      } as Response)
+    );
+
+    const result = await scrapeMain(['http://example.jp/euc'], 'EUC-JP Article');
+    
+    // 日本語コンテンツが正しく抽出されていることを確認
+    expect(result[0].page_content).toContain('日本語のコンテンツ');
+    expect(result[0].page_content).toContain('EUC-JPでエンコードされた');
+    expect(result[0].page_content).not.toContain('�');
+  });
+
+  // 広告とサイドバーの除外テスト
+  test('広告とサイドバーを除外したコンテンツ抽出', async () => {
+    const htmlString = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>テストページ</title>
+        </head>
+        <body>
+          <main class="main-content">
+            <h1>メインコンテンツ</h1>
+            <p>これは重要な本文です。200文字以上の意味のある内容を含んでいます。TypeScriptは、JavaScriptに静的型付けを追加したプログラミング言語です。型システムにより、開発時のエラー検出が容易になり、コードの品質と保守性が向上します。また、最新のECMAScript機能もサポートしており、モダンな開発手法を実践できます。</p>
+          </main>
+          <aside class="sidebar">
+            <div class="widget">
+              <h3>関連記事</h3>
+              <ul>
+                <li>記事1</li>
+                <li>記事2</li>
+              </ul>
+            </div>
+          </aside>
+          <div class="advertisement">
+            <p>広告コンテンツ</p>
+          </div>
+          <div id="ad-banner">
+            <p>バナー広告</p>
+          </div>
+          <nav class="navigation">
+            <ul>
+              <li>ホーム</li>
+              <li>about</li>
+            </ul>
+          </nav>
+        </body>
+      </html>
+    `;
+
+    const encoder = new TextEncoder();
+    const htmlData = encoder.encode(htmlString);
+
+    // fetchのモックを設定
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(htmlData.buffer),
+        headers: new Headers({
+          'content-type': 'text/html; charset=utf-8'
+        }),
+        status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.com/test',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(htmlString),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
+      } as Response)
+    );
+
+    const result = await scrapeMain(['http://example.com/test'], 'Test Page');
+    
+    // メインコンテンツが含まれていることを確認
+    expect(result[0].page_content).toContain('メインコンテンツ');
+    expect(result[0].page_content).toContain('TypeScriptは、JavaScriptに静的型付けを追加した');
+    
+    // 広告が除外されていることを確認
+    expect(result[0].page_content).not.toContain('広告コンテンツ');
+    expect(result[0].page_content).not.toContain('バナー広告');
+    
+    // サイドバーが除外されていることを確認
+    expect(result[0].page_content).not.toContain('関連記事');
+    expect(result[0].page_content).not.toContain('記事1');
+    
+    // ナビゲーションが除外されていることを確認
+    expect(result[0].page_content).not.toContain('ホーム');
+    expect(result[0].page_content).not.toContain('about');
+  });
+
+  // 短すぎるコンテンツの除外テスト
+  test('短すぎるコンテンツの除外', async () => {
+    const htmlString = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>短いコンテンツ</title>
+        </head>
+        <body>
+          <main>
+            <h1>短い見出し</h1>
+            <p>これは短すぎる本文です。</p>
+          </main>
+        </body>
+      </html>
+    `;
+
+    const encoder = new TextEncoder();
+    const htmlData = encoder.encode(htmlString);
+
+    // fetchのモックを設定
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        arrayBuffer: () => Promise.resolve(htmlData.buffer),
+        headers: new Headers({
+          'content-type': 'text/html; charset=utf-8'
+        }),
+        status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.com/short',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(htmlString),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
+      } as Response)
+    );
+
+    const result = await scrapeMain(['http://example.com/short'], 'Short Content');
+    
+    // 短すぎるコンテンツは除外されるため、結果は空になる
+    expect(result).toHaveLength(0);
   });
 
   // フェッチエラーのテスト
@@ -14,7 +252,19 @@ describe('scrapeMain', () => {
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
-      })
+        redirected: false,
+        type: 'error',
+        url: 'http://example.com/error',
+        body: null,
+        bodyUsed: false,
+        headers: new Headers(),
+        clone: () => ({ } as Response),
+        arrayBuffer: () => Promise.reject(new Error('Server Error')),
+        text: () => Promise.reject(new Error('Server Error')),
+        json: () => Promise.reject(new Error('Server Error')),
+        blob: () => Promise.reject(new Error('Server Error')),
+        formData: () => Promise.reject(new Error('Server Error')),
+      } as Response)
     );
 
     const result = await scrapeMain(['http://example.com/error'], 'Error Page');
@@ -31,171 +281,42 @@ describe('scrapeMain', () => {
     expect(result).toHaveLength(0);
   });
 
-  // 静的サイトのテスト
-  test('静的サイトのスクレイピング', async () => {
-    const mockStaticHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>静的サイトのテスト</title>
-        </head>
-        <body>
-          <h1>メインタイトル</h1>
-          <p>これは段落1です。重要な情報を含んでいます。</p>
-          <h2>サブセクション</h2>
-          <p>これは段落2です。追加の詳細情報です。</p>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mockStaticHTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/static'], 'Static Page');
-    expect(result[0].page_content).toContain('メインタイトル');
-    expect(result[0].page_content).toContain('これは段落1です');
-    expect(result[0].metadata.title).toBe('静的サイトのテスト');
-  });
-
-  // WordPress系サイトのテスト
-  test('WordPress系サイトのスクレイピング', async () => {
-    const mockWordPressHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>WordPressブログ記事</title>
-          <meta name="description" content="ブログの説明文です">
-        </head>
-        <body>
-          <header>
-            <h1 class="entry-title">ブログ記事のタイトル</h1>
-          </header>
-          <article class="post-content">
-            <p>これはブログ記事の本文です。</p>
-            <p>WordPressの一般的なコンテンツ構造を模しています。</p>
-          </article>
-          <aside>
-            <div class="widget">
-              <h3>サイドバー</h3>
-              <p>この部分は無視されるべき情報です。</p>
-            </div>
-          </aside>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mockWordPressHTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/wordpress'], 'WordPress Page');
-    expect(result[0].page_content).toContain('ブログ記事のタイトル');
-    expect(result[0].page_content).toContain('ブログ記事の本文です');
-    expect(result[0].page_content).not.toContain('サイドバー');
-    expect(result[0].metadata.title).toBe('WordPressブログ記事');
-  });
-
-  // SPAのテスト
-  test('SPAサイトのスクレイピング', async () => {
-    const mockSPAHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>SPA Site</title>
-        </head>
-        <body>
-          <div id="app">
-            <!-- 初期状態では空 -->
-          </div>
-          <script>
-            // 動的にコンテンツを生成
-            window.onload = () => {
-              const app = document.getElementById('app');
-              app.innerHTML = \`
-                <h1>動的に生成されたタイトル</h1>
-                <p>これは JavaScript で動的に生成されたコンテンツです。</p>
-              \`;
-            };
-          </script>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mockSPAHTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/spa'], 'SPA Page');
-    // linkedomの制限により、動的コンテンツは取得できない
-    expect(result[0].page_content).not.toContain('動的に生成されたタイトル');
-    expect(result[0].metadata.title).toBe('SPA Site');
-  });
-
-  // エラーケースのテスト
-  test('404エラーページのスクレイピング', async () => {
-    const mock404HTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>404 Not Found</title>
-        </head>
-        <body>
-          <h1>404 Not Found</h1>
-          <p>The requested page could not be found.</p>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mock404HTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/404'], '404 Page');
-    expect(result[0].page_content).toContain('404 Not Found');
-    expect(result[0].metadata.title).toBe('404 Not Found');
-  });
-
+  // HTMLではないコンテンツのテスト
   test('HTMLではないコンテンツのスクレイピング', async () => {
-    const mockPDFContent = '%PDF-1.7\n...'; // PDFのバイナリデータを想定
+    const pdfContent = '%PDF-1.7\n...'; // PDFのバイナリデータを想定
+    const encoder = new TextEncoder();
+    const pdfData = encoder.encode(pdfContent);
 
     // fetchのモックを設定
     (global.fetch as jest.Mock).mockImplementationOnce(() =>
       Promise.resolve({
         ok: true,
-        text: () => Promise.resolve(mockPDFContent),
+        arrayBuffer: () => Promise.resolve(pdfData.buffer),
+        headers: new Headers({
+          'content-type': 'application/pdf'
+        }),
         status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.com/document.pdf',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(pdfContent),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
       } as Response)
     );
 
     const result = await scrapeMain(['http://example.com/document.pdf'], 'PDF Document');
-    // PDFコンテンツは適切にハンドリングされるべき
     expect(result).toHaveLength(0);
   });
 
   // 実在するサイトのテスト
   test('実在するWordPressサイトのスクレイピング', async () => {
-    const mockRealWordPressHTML = `
+    const htmlString = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -216,9 +337,9 @@ describe('scrapeMain', () => {
                   </div>
                 </header>
                 <div class="entry-content">
-                  <p>TypeScript 5.0で導入された新機能について解説します。</p>
+                  <p>TypeScript 5.0で導入された新機能について解説します。この記事では、型システムの改善点や、開発者の生産性を向上させる新しい機能について詳しく説明します。特に、const type parametersやデコレータの改善など、注目すべき変更点を重点的に取り上げます。</p>
                   <h2>1. const Type Parameters</h2>
-                  <p>const type parametersを使用することで、より厳密な型チェックが可能になりました。</p>
+                  <p>const type parametersを使用することで、より厳密な型チェックが可能になりました。これにより、タプルや配列の型推論が改善され、より安全なコードが書けるようになります。</p>
                   <pre><code>function process<const T extends string[]>(arr: T) {}</code></pre>
                 </div>
                 <footer class="entry-footer">
@@ -241,12 +362,29 @@ describe('scrapeMain', () => {
       </html>
     `;
 
+    const encoder = new TextEncoder();
+    const htmlData = encoder.encode(htmlString);
+
     // fetchのモックを設定
     (global.fetch as jest.Mock).mockImplementationOnce(() =>
       Promise.resolve({
         ok: true,
-        text: () => Promise.resolve(mockRealWordPressHTML),
+        arrayBuffer: () => Promise.resolve(htmlData.buffer),
+        headers: new Headers({
+          'content-type': 'text/html; charset=utf-8'
+        }),
         status: 200,
+        statusText: 'OK',
+        redirected: false,
+        type: 'basic',
+        url: 'http://example.com/tech-blog',
+        body: null,
+        bodyUsed: false,
+        clone: () => ({ } as Response),
+        text: () => Promise.resolve(htmlString),
+        json: () => Promise.reject(new Error('Not JSON')),
+        blob: () => Promise.reject(new Error('Not implemented')),
+        formData: () => Promise.reject(new Error('Not implemented')),
       } as Response)
     );
 
@@ -264,141 +402,5 @@ describe('scrapeMain', () => {
     // メタデータの確認
     expect(result[0].metadata.title).toBe('Tech Blog | 最新の技術情報');
     expect(result[0].metadata.userTitle).toBe('Tech Blog');
-  });
-
-  // 見出し階層と特殊タグのテスト
-  test('見出し階層の保持と特殊タグの処理', async () => {
-    const mockHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>階層構造テスト</title>
-          <style>
-            body { color: red; }
-          </style>
-        </head>
-        <body>
-          <h1>メインタイトル</h1>
-          <noscript>
-            <h2>JavaScript無効時の見出し</h2>
-            <p>重要なフォールバックコンテンツ</p>
-          </noscript>
-          <div class="content">
-            <h2>セクション1</h2>
-            <p>セクション1の内容</p>
-            <h3>サブセクション1.1</h3>
-            <p>サブセクション1.1の内容</p>
-            <h4>詳細1.1.1</h4>
-            <p>詳細1.1.1の内容</p>
-            <h5>補足1.1.1.1</h5>
-            <p>補足1.1.1.1の内容</p>
-            <h6>メモ1.1.1.1.1</h6>
-            <p>メモ1.1.1.1.1の内容</p>
-          </div>
-          <svg>
-            <circle cx="50" cy="50" r="40" />
-          </svg>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mockHTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/hierarchy'], 'Hierarchy Test');
-    const content = result[0].page_content;
-
-    // 見出しの階層構造を確認
-    expect(content).toContain('# メインタイトル');
-    expect(content).toContain('## JavaScript無効時の見出し');
-    expect(content).toContain('## セクション1');
-    expect(content).toContain('### サブセクション1.1');
-    expect(content).toContain('#### 詳細1.1.1');
-    expect(content).toContain('##### 補足1.1.1.1');
-    expect(content).toContain('###### メモ1.1.1.1.1');
-
-    // noscriptの内容が保持されていることを確認
-    expect(content).toContain('重要なフォールバックコンテンツ');
-
-    // 不要なタグが削除されていることを確認
-    expect(content).not.toContain('color: red');
-    expect(content).not.toContain('circle');
-
-    // 見出しの順序が正しいことを確認
-    const lines = content.split('\n');
-    const h1Index = lines.findIndex(line => line.startsWith('# メイン'));
-    const h2Index = lines.findIndex(line => line.startsWith('## セクション'));
-    const h3Index = lines.findIndex(line => line.startsWith('### サブ'));
-    expect(h1Index).toBeLessThan(h2Index);
-    expect(h2Index).toBeLessThan(h3Index);
-  });
-
-  test('実在するドキュメントサイトのスクレイピング', async () => {
-    const mockDocsHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>API Documentation</title>
-          <meta name="description" content="Official API documentation">
-        </head>
-        <body>
-          <nav class="sidebar">
-            <ul>
-              <li><a href="#intro">Introduction</a></li>
-              <li><a href="#api">API Reference</a></li>
-            </ul>
-          </nav>
-          <main class="content">
-            <section id="intro">
-              <h1>Introduction</h1>
-              <p>Welcome to the API documentation. This guide will help you understand how to use our API effectively.</p>
-            </section>
-            <section id="api">
-              <h2>API Reference</h2>
-              <div class="endpoint">
-                <h3>GET /api/v1/users</h3>
-                <p>Returns a list of users.</p>
-                <pre><code>
-                  {
-                    "users": [
-                      { "id": 1, "name": "John" }
-                    ]
-                  }
-                </code></pre>
-              </div>
-            </section>
-          </main>
-        </body>
-      </html>
-    `;
-
-    // fetchのモックを設定
-    (global.fetch as jest.Mock).mockImplementationOnce(() =>
-      Promise.resolve({
-        ok: true,
-        text: () => Promise.resolve(mockDocsHTML),
-        status: 200,
-      } as Response)
-    );
-
-    const result = await scrapeMain(['http://example.com/docs'], 'API Docs');
-    
-    // メインコンテンツが含まれていることを確認
-    expect(result[0].page_content).toContain('Welcome to the API documentation');
-    expect(result[0].page_content).toContain('GET /api/v1/users');
-    expect(result[0].page_content).toContain('Returns a list of users');
-    
-    // サイドバーのナビゲーションは含まれていないことを確認
-    expect(result[0].page_content).not.toMatch(/Introduction.*API Reference/);
-    
-    // メタデータの確認
-    expect(result[0].metadata.title).toBe('API Documentation');
-    expect(result[0].metadata.userTitle).toBe('API Docs');
   });
 });

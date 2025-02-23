@@ -107,23 +107,72 @@ export default async function scrapeMain(
         });
       }
 
-      // メインコンテンツを取得
-      const mainContent = 
-        doc.querySelector('.post-content')?.textContent ||
-        doc.querySelector('article')?.textContent ||
-        doc.querySelector('main')?.textContent ||
-        '';
+      // メインコンテンツを取得（広告やサイドバーを除外）
+      const contentSelectors = [
+        // メインコンテンツのセレクタ
+        '.post-content',
+        'article',
+        'main',
+        '.entry-content',
+        '.article-content',
+        '#main-content',
+        // フォールバックとして一般的なコンテナ
+        '.container',
+        '.content'
+      ];
 
-      // フォールバックとしてbodyを使用
+      // 除外するセレクタ
+      const excludeSelectors = [
+        // 広告
+        '[class*="ad"]',
+        '[id*="ad"]',
+        '[class*="advertisement"]',
+        // サイドバー
+        'aside',
+        '.sidebar',
+        '#sidebar',
+        // ナビゲーション
+        'nav',
+        '.navigation',
+        '#navigation',
+        // フッター
+        'footer',
+        '.footer',
+        '#footer',
+        // その他の不要な要素
+        '.social-share',
+        '.related-posts',
+        '.comments',
+        '.widget'
+      ];
+
+      // 除外要素を削除
+      excludeSelectors.forEach(selector => {
+        doc.querySelectorAll(selector).forEach(el => el.remove());
+      });
+
+      // メインコンテンツを探す
+      let mainContent = '';
+      for (const selector of contentSelectors) {
+        const element = doc.querySelector(selector);
+        if (element) {
+          mainContent = element.textContent || '';
+          break;
+        }
+      }
+
+      // メインコンテンツが見つからない場合は、bodyから不要な要素を除いたコンテンツを使用
       const bodyContent = !mainContent ? doc.querySelector('body')?.textContent || '' : '';
 
-      // 4) テキストが取得できた場合のみ追加
-      if (headings.length > 0 || mainContent || bodyContent) {
-        // 見出しとコンテンツを結合
+      // 4) 意味のあるコンテンツが取得できた場合のみ追加
+      if ((headings.length > 0 && headings.some(h => h.length > 10)) || 
+          (mainContent && mainContent.length > 100) || 
+          (bodyContent && bodyContent.length > 100)) {
+        // 見出しとコンテンツを結合（意味のある長さのものだけ）
         const pageContent = cleanText([
           extractHeadingContent('.post-title', '#'),
           extractHeadingContent('title', '#'),
-          ...headings,
+          ...headings.filter(h => h.length > 10), // 短すぎる見出しを除外
           mainContent || bodyContent
         ].filter(Boolean).join('\n'));
         const metadata = {
