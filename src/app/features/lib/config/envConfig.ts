@@ -4,22 +4,16 @@
  * - ブラウザ環境（Vite）: import.meta.env から取得
  */
 export function getOpenAIApiKey(): string {
+  // 1) Node.js 環境
   if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
     return process.env.OPENAI_API_KEY;
   }
 
-  // ブラウザ環境（Vite）の場合
-  if (typeof window !== 'undefined') {
-    try {
-      // @ts-ignore - Vite環境でのみ使用
-      const viteKey = window.__VITE_OPENAI_API_KEY__;
-      if (viteKey) return viteKey;
-    } catch (e) {
-      // 環境変数が取得できない場合は無視
-    }
+  // 2) ブラウザ（Vite）環境
+  if (typeof import.meta !== 'undefined' && import.meta.env.VITE_OPENAI_API_KEY) {
+    return import.meta.env.VITE_OPENAI_API_KEY;
   }
 
-
+  // 3) 上記いずれも取得できなかったらデフォルトキー
   return "YOUR_OPENAI_API_KEY";
-
 }
