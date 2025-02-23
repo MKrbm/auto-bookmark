@@ -1,18 +1,9 @@
 // create_vectors.ts
 
-import { OpenAI } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { defaultEmbeddingConfig, type EmbeddingConfig } from './config/embeddingConfig';
-
-import { getOpenAIApiKey } from './config/envConfig';
-
-/** 
- * 環境変数的に取得できない場合はベタ書き or chrome.storage 経由のキーを使うなど 
- * セキュリティリスクに注意
- */
-// APIキーを環境変数から取得
-const OPENAI_API_KEY = getOpenAIApiKey();
+import { generateEmbeddings } from './embedding';
+import type { EmbeddingModelConfig } from './embedding/types';
 
 // Document型 (scrape.ts と同じ構造)
 interface Document {
@@ -24,30 +15,16 @@ interface Document {
   };
 }
 
-// テキスト分割とEmbeddingモデルの初期化関数
-function initializeModels(config: Partial<EmbeddingConfig> = {}) {
+// テキスト分割の初期化関数
+function initializeTextSplitter(config: Partial<EmbeddingConfig> = {}) {
   // デフォルト設定とマージ
   const finalConfig = { ...defaultEmbeddingConfig, ...config };
 
-  // テキスト分割
-  const textSplitter = new RecursiveCharacterTextSplitter({
+  return new RecursiveCharacterTextSplitter({
     chunkSize: finalConfig.chunkSize,
     chunkOverlap: finalConfig.chunkOverlap,
     lengthFunction: finalConfig.lengthFunction,
   });
-
-  // Embeddingモデル (langchain/browser で動く想定)
-  const embedding_model = new OpenAIEmbeddings({
-    openAIApiKey: OPENAI_API_KEY,
-    model: finalConfig.model,
-    dimensions: finalConfig.dimensions,
-    batchSize: finalConfig.batchSize,
-    stripNewLines: finalConfig.stripNewLines,
-    timeout: finalConfig.timeout,
-    maxRetries: finalConfig.max_retries,
-  });
-
-  return { textSplitter, embedding_model };
 }
 
 /**
@@ -62,7 +39,7 @@ export async function create_vectorsMain(
     filename: string;
     userTitle: string;
   }[],
-  config: Partial<EmbeddingConfig> = {}
+  config: EmbeddingModelConfig = {}
 ): Promise<{
   chunk_index: number;
   chunk_text: string;
@@ -71,8 +48,8 @@ export async function create_vectorsMain(
   title: string;
 }[]> {
   try {
-    // モデルの初期化（共有して使用）
-    const { textSplitter, embedding_model } = initializeModels(config);
+    // テキスト分割の初期化
+    const textSplitter = initializeTextSplitter(config);
 
     // 各ページを並列で処理
     const processPage = async (page: { docs: Document[]; filename: string; userTitle: string }) => {
@@ -91,18 +68,15 @@ export async function create_vectorsMain(
         console.timeEnd(`text-splitting (${title})`);
 
         // 2) チャンクごとに Embedding
-        console.time(`document-embedding-generation (${title})`);
-        const embeddings = await Promise.all(
-          allSplits.map(chunk => embedding_model.embedDocuments([chunk.pageContent]))
-        );
-        console.timeEnd(`document-embedding-generation (${title})`);
+        const chunks = allSplits.map(split => split.pageContent);
+        const embeddings = await generateEmbeddings(chunks, config);
 
         // 3) (index, text, vector) の形でまとめる
         console.time(`data-formatting (${title})`);
-        const textAndVectorList = allSplits.map((chunk, index) => ({
+        const textAndVectorList = embeddings.map((embedding, index) => ({
           chunk_index: index,
-          chunk_text: chunk.pageContent.replace(/\n/g, ' '),
-          chunk_vector: embeddings[index][0] || [],
+          chunk_text: embedding.text.replace(/\n/g, ' '),
+          chunk_vector: embedding.vector,
           url,
           title,
         }));

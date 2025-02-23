@@ -1,35 +1,21 @@
 import { ChunkData } from '../lib/chunkTypes';
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { defaultEmbeddingConfig } from '../lib/config/embeddingConfig';
-import { getOpenAIApiKey } from '../lib/config/envConfig';
+import { generateEmbeddings, calculateCosineSimilarity } from '../lib/embedding';
+import type { EmbeddingModelConfig } from '../lib/embedding/types';
 
-interface SearchConfig {
-  model?: string;
-  dimensions?: number;
+interface SearchConfig extends Omit<EmbeddingModelConfig, 'topN' | 'snippetLength'> {
   topN?: number;
   snippetLength?: number;
 }
 
-function createEmbeddingModel(config: SearchConfig = {}) {
-  return new OpenAIEmbeddings({
-    openAIApiKey: getOpenAIApiKey(),
-    model: config.model || defaultEmbeddingConfig.model,
-    dimensions: config.dimensions || defaultEmbeddingConfig.dimensions,
-  });
-}
-
-function calculateCosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0;
-  let magA = 0;
-  let magB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
-  }
-  magA = Math.sqrt(magA);
-  magB = Math.sqrt(magB);
-  return (magA && magB) ? (dot / (magA * magB)) : 0;
+// 検索用の設定を作成
+function createSearchConfig(config: SearchConfig, signal?: AbortSignal): EmbeddingModelConfig {
+  const { topN, snippetLength, ...embeddingConfig } = config;
+  const finalConfig = { ...defaultEmbeddingConfig, ...embeddingConfig };
+  return {
+    ...finalConfig,
+    signal,
+  };
 }
 
 export interface RepresentativeSearchResult {
@@ -53,24 +39,18 @@ export async function aiSearchRepresentative(
   config: SearchConfig = {},
   signal?: AbortSignal
 ): Promise<RepresentativeSearchResult[]> {
-  if (!input.trim()) {
-    return [];
-  }
-  if (signal?.aborted) {
-    console.log('[aiSearchRepresentative] Aborted before embedding');
+  if (!input.trim() || chunks.length === 0) {
     return [];
   }
 
-  const embeddingModel = createEmbeddingModel(config);
+  const searchConfig = createSearchConfig(config, signal);
+
   const topN = config.topN || defaultEmbeddingConfig.topN;
   const snippetLength = config.snippetLength || defaultEmbeddingConfig.snippetLength;
 
-  // 1) input を Embedding (1回)
-  console.time(`query-embedding-generation (query: "${input.slice(0, 30)}${input.length > 30 ? '...' : ''}")`);
-  const [queryEmbedding] = await embeddingModel.embedDocuments([input]);
-  console.timeEnd(`query-embedding-generation (query: "${input.slice(0, 30)}${input.length > 30 ? '...' : ''}")`);
-  if (signal?.aborted) {
-    console.log('[aiSearchRepresentative] Aborted after query embedding');
+  // 1) クエリのembedding生成
+  const [queryEmbedding] = await generateEmbeddings([input], searchConfig);
+  if (!queryEmbedding || signal?.aborted) {
     return [];
   }
 
@@ -85,7 +65,7 @@ export async function aiSearchRepresentative(
   }> = {};
 
   for (const chunk of chunks) {
-    const similarity = calculateCosineSimilarity(chunk.chunk_vector, queryEmbedding);
+    const similarity = calculateCosineSimilarity(chunk.chunk_vector, queryEmbedding.vector);
 
     // 初期値がなければ作る
     if (!urlBest[chunk.url]) {

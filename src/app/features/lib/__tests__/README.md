@@ -1,6 +1,56 @@
 # ブックマーク処理と検索のテスト仕様
 
+# Embedding処理の共通化（2024-01-XX）
+
+## 概要
+embedding生成処理を共通モジュール化し、create_vectors.tsとaiSearchRepresentative.tsで重複していた処理を一元化しました。
+
+## 変更内容
+
+### 1. 共通モジュールの作成
+- 場所: src/app/features/lib/embedding/
+- ファイル構成:
+  - types.ts: 共通の型定義
+  - index.ts: 共通のembedding機能
+
+### 2. 主な機能
+- createEmbeddingModel: OpenAIのEmbeddingモデルを初期化
+- generateEmbeddings: テキストの配列をembeddingベクトルに変換
+- calculateCosineSimilarity: コサイン類似度の計算
+- findSimilarTexts: クエリテキストと対象テキストの類似度を計算
+
+### 3. 変更されたファイル
+1. create_vectors.ts
+   - 変更点:
+     - embedding生成処理を共通モジュールに移行
+     - テキスト分割とembedding生成を分離
+     - 並列処理の実装を維持
+     - 型の安全性を向上
+
+2. aiSearchRepresentative.ts
+   - 変更点:
+     - embedding生成処理を共通モジュールに移行
+     - 検索固有の設定と共通設定を分離
+     - 型の安全性を向上（topN、snippetLengthの適切な型定義）
+     - エラーハンドリングの改善
+
+### 4. 期待される効果
+- コードの重複を削除し、embedding処理を一箇所に集約
+- 保守性の向上（embedding関連の変更が1箇所で可能）
+- 型の安全性の向上（より厳密な型チェック）
+- 機能の一貫性を確保（同じembedding処理を共有）
+- 設定の柔軟性を維持（検索固有の設定を許容）
+
+### 5. 注意点
+- OpenAI APIの設定は環境変数から取得
+- デフォルト設定はembeddingConfig.tsで管理
+- エラーハンドリングは各機能で適切に実装
+
+---
+
 ## テストの実行方法
+
+[以下、既存のREADME.mdの内容...]
 
 ### 全テストの実行
 ```bash
