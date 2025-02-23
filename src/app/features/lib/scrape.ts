@@ -2,6 +2,81 @@
 import { parseHTML } from 'linkedom';
 
 /**
+ * エンコーディングを検出する
+ * 1. Content-Typeヘッダーから検出
+ * 2. メタタグから検出
+ * 3. バイナリパターンから検出
+ * @param contentType Content-Typeヘッダーの値
+ * @param buffer バイナリデータ
+ * @returns 検出されたエンコーディング
+ */
+function detectCharset(contentType: string | null, buffer: ArrayBuffer): string {
+  // Content-Typeからの検出
+  const declaredCharset = contentType?.match(/charset=([^;]+)/i)?.[1]?.toLowerCase();
+  if (declaredCharset) {
+    return normalizeCharset(declaredCharset);
+  }
+
+  // メタタグからの検出（バッファの先頭部分のみ）
+  const headContent = new TextDecoder('utf-8').decode(buffer.slice(0, 1024));
+  const metaCharset = headContent.match(/<meta[^>]+charset=["']?([^"'>]+)/i)?.[1]?.toLowerCase();
+  if (metaCharset) {
+    return normalizeCharset(metaCharset);
+  }
+
+  // バイナリデータからの検出
+  const bytes = new Uint8Array(buffer.slice(0, 1024));
+  
+  // Shift-JISの特徴的なバイトパターンをチェック
+  const hasSjisPattern = bytes.some(byte => 
+    (byte >= 0x81 && byte <= 0x9F) || (byte >= 0xE0 && byte <= 0xEF)
+  );
+  
+  if (hasSjisPattern) {
+    return 'shift_jis';
+  }
+
+  // EUC-JPの特徴的なバイトパターンをチェック
+  const hasEucJpPattern = bytes.some(byte =>
+    (byte >= 0xA1 && byte <= 0xFE)
+  );
+
+  if (hasEucJpPattern) {
+    return 'euc-jp';
+  }
+
+  // デフォルトはUTF-8
+  return 'utf-8';
+}
+
+/**
+ * 文字エンコーディング名を正規化する
+ * 様々な表記のエンコーディング名を標準的な名前に変換
+ * @param charset 正規化する文字エンコーディング名
+ * @returns 正規化された文字エンコーディング名
+ */
+function normalizeCharset(charset: string): string {
+  switch (charset.toLowerCase()) {
+    case 'shift_jis':
+    case 'shift-jis':
+    case 'x-sjis':
+    case 'sjis':
+    case 'ms_kanji':
+    case 'windows-31j':
+      return 'shift_jis';
+    case 'euc-jp':
+    case 'x-euc-jp':
+    case 'eucjp':
+      return 'euc-jp';
+    case 'iso-2022-jp':
+    case 'jis':
+      return 'iso-2022-jp';
+    default:
+      return 'utf-8';
+  }
+}
+
+/**
  * HTMLエンティティをデコードし、テキストを正規化
  * - HTMLエンティティを実際の文字列に変換
  * - 改行・連続スペースを正規化
@@ -58,19 +133,16 @@ export default async function scrapeMain(
       // 1) fetchでHTMLを取得
       const response = await fetch(url);
       
-      // Content-Typeヘッダーからエンコーディングを取得
+      // バイナリデータとして取得
+      const buffer = await response.arrayBuffer();
+      
+      // エンコーディング検出
       const contentType = response.headers.get('content-type');
-      let charset = contentType?.match(/charset=([^;]+)/i)?.[1]?.toLowerCase() || 'utf-8';
+      const charset = detectCharset(contentType, buffer);
       
-      // Shift_JISやEUC-JPの場合はブラウザ互換の名前に変換
-      if (charset === 'shift_jis' || charset === 'shift-jis' || charset === 'x-sjis') {
-        charset = 'shift_jis';
-      } else if (charset === 'euc-jp') {
-        charset = 'euc-jp';
-      }
-      
-      // HTMLを取得
-      let html = await response.text();
+      // 適切なエンコーディングでデコード
+      const decoder = new TextDecoder(charset);
+      let html = decoder.decode(buffer);
 
       // HTMLかどうかの簡易チェック
       if (!html.trim().toLowerCase().startsWith('<!doctype html') && 
