@@ -19,5 +19,7 @@ export function getOpenAIApiKey(): string {
     }
   }
 
-  return "YOUR_KEY";
+
+  return "YOUR_OPENAI_API_KEY";
+
 }
