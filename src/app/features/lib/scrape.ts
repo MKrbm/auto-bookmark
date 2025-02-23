@@ -52,9 +52,8 @@ export default async function scrapeMain(
   urls: string[],
   userTitle: string
 ): Promise<Document[]> {
-  const documents: Document[] = [];
-
-  for (const url of urls) {
+  // URLごとの処理を関数化
+  const scrapeUrl = async (url: string): Promise<Document | null> => {
     try {
       // 1) fetchでHTMLを取得
       const response = await fetch(url);
@@ -77,7 +76,7 @@ export default async function scrapeMain(
       if (!html.trim().toLowerCase().startsWith('<!doctype html') && 
           !html.trim().toLowerCase().startsWith('<html')) {
         console.warn(`Not an HTML document: ${url}`);
-        continue;
+        return null;
       }
 
       // 2) linkedomでパース
@@ -164,7 +163,7 @@ export default async function scrapeMain(
       // メインコンテンツが見つからない場合は、bodyから不要な要素を除いたコンテンツを使用
       const bodyContent = !mainContent ? doc.querySelector('body')?.textContent || '' : '';
 
-      // 4) 意味のあるコンテンツが取得できた場合のみ追加
+      // 4) 意味のあるコンテンツが取得できた場合のみ返す
       if ((headings.length > 0 && headings.some(h => h.length > 10)) || 
           (mainContent && mainContent.length > 100) || 
           (bodyContent && bodyContent.length > 100)) {
@@ -175,21 +174,32 @@ export default async function scrapeMain(
           ...headings.filter(h => h.length > 10), // 短すぎる見出しを除外
           mainContent || bodyContent
         ].filter(Boolean).join('\n'));
-        const metadata = {
-          url,
-          title: doc.querySelector('title')?.textContent || '',
-          userTitle,
+        
+        return {
+          page_content: pageContent,
+          metadata: {
+            url,
+            title: doc.querySelector('title')?.textContent || '',
+            userTitle,
+          }
         };
-        documents.push({ page_content: pageContent, metadata });
       } else {
         console.warn(`No content found for ${url}.`);
+        return null;
       }
 
     } catch (error) {
       console.error(`Error fetching ${url}:`, error);
+      return null;
     }
-  }
+  };
 
-  // エラーがあった場合や結果が空の場合は空配列を返す
+  // 全URLを並列処理
+  const results = await Promise.all(
+    urls.map(url => scrapeUrl(url))
+  );
+
+  // nullを除外して結果を返す
+  const documents = results.filter((doc): doc is Document => doc !== null);
   return documents.length > 0 ? documents : [];
 }

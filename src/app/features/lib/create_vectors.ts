@@ -57,56 +57,72 @@ function initializeModels(config: Partial<EmbeddingConfig> = {}) {
  * - チャンク情報を return
  */
 export async function create_vectorsMain(
-  docs: Document[],
-  filename: string,
-  userTitle: string,
+  pages: {
+    docs: Document[];
+    filename: string;
+    userTitle: string;
+  }[],
   config: Partial<EmbeddingConfig> = {}
 ): Promise<{
   chunk_index: number;
   chunk_text: string;
   chunk_vector: number[];
+  url: string;
+  title: string;
 }[]> {
-    try {
-      // URLとタイトルを取得
-      const url = docs[0]?.metadata.url || 'Unknown URL';
-      const title = docs[0]?.metadata.title || 'Unknown Title';
-      
-      // モデルの初期化
-      const { textSplitter, embedding_model } = initializeModels(config);
-      
-      // 1) テキスト分割
-      console.time(`text-splitting (${title})`);
-      const allSplits = await textSplitter.splitDocuments(
-      docs.map(doc => ({
-        pageContent: doc.page_content,
-        metadata: doc.metadata,
-      }))
-    );
-    console.timeEnd(`text-splitting (${title})`);
+  try {
+    // モデルの初期化（共有して使用）
+    const { textSplitter, embedding_model } = initializeModels(config);
 
-    // 2) チャンクごとに Embedding
-    console.time(`document-embedding-generation (${title})`);
-    //    embedDocuments() は 2次元配列[ [vector], [vector], ... ] を返す想定
-    const embeddings = await Promise.all(
-      allSplits.map(chunk => embedding_model.embedDocuments([chunk.pageContent]))
-    );
-    console.timeEnd(`document-embedding-generation (${title})`);
+    // 各ページを並列で処理
+    const processPage = async (page: { docs: Document[]; filename: string; userTitle: string }) => {
+      const url = page.docs[0]?.metadata.url || 'Unknown URL';
+      const title = page.docs[0]?.metadata.title || 'Unknown Title';
 
-    // 3) (index, text, vector) の形でまとめる
-    console.time(`data-formatting (${title})`);
-    const textAndVectorList = allSplits.map((chunk, index) => ({
-      chunk_index: index,
-      chunk_text: chunk.pageContent.replace(/\n/g, ' '),
-      chunk_vector: embeddings[index][0] || [],
-    }));
+      try {
+        // 1) テキスト分割
+        console.time(`text-splitting (${title})`);
+        const allSplits = await textSplitter.splitDocuments(
+          page.docs.map(doc => ({
+            pageContent: doc.page_content,
+            metadata: doc.metadata,
+          }))
+        );
+        console.timeEnd(`text-splitting (${title})`);
 
-    // 4) 結果を返す
-    console.timeEnd(`data-formatting (${title})`);
-    console.log(`Processed: ${url}`);
-    return textAndVectorList;
+        // 2) チャンクごとに Embedding
+        console.time(`document-embedding-generation (${title})`);
+        const embeddings = await Promise.all(
+          allSplits.map(chunk => embedding_model.embedDocuments([chunk.pageContent]))
+        );
+        console.timeEnd(`document-embedding-generation (${title})`);
 
+        // 3) (index, text, vector) の形でまとめる
+        console.time(`data-formatting (${title})`);
+        const textAndVectorList = allSplits.map((chunk, index) => ({
+          chunk_index: index,
+          chunk_text: chunk.pageContent.replace(/\n/g, ' '),
+          chunk_vector: embeddings[index][0] || [],
+          url,
+          title,
+        }));
+
+        console.timeEnd(`data-formatting (${title})`);
+        console.log(`Processed: ${url}`);
+        return textAndVectorList;
+      } catch (error) {
+        console.error(`Error processing page ${url}:`, error);
+        return [];
+      }
+    };
+
+    // 全ページを並列処理
+    const results = await Promise.all(pages.map(processPage));
+    
+    // 結果をフラット化して返す
+    return results.flat();
   } catch (error) {
-    console.error(error);
+    console.error('Error in create_vectorsMain:', error);
     return [];
   }
 }
