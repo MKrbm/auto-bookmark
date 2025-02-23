@@ -1,12 +1,40 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Test FetchedBookmarks</title>
+  <meta charset="UTF-8">
+  <title>Test Runner for Fetched Bookmarks</title>
+  <script type="module" src="./testFetched.ts"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 10px;
+    }
+    .info {
+      background-color: #f5f5f5;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
 </head>
 <body>
-  <h1>Testing fetch-style Bookmarks</h1>
-  <p>Open the console to see results</p>
-  <script type="module" src="./testRunnerFetched.ts"></script>
+  <h1>Test Runner for Fetched Bookmarks</h1>
+  <div class="info">
+    <p>このページは拡張機能のブックマーク処理と検索機能をテストします。</p>
+    <p>テスト結果は開発者ツールのコンソールに表示されます。</p>
+    <p>以下の機能がテストされます：</p>
+    <ul>
+      <li>ブックマークのチャンク処理</li>
+      <li>ストレージへの保存と取得</li>
+      <li>AI検索機能</li>
+    </ul>
+  </div>
 </body>
 </html>

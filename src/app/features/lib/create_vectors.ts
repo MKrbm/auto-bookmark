@@ -5,12 +5,14 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { defaultEmbeddingConfig, type EmbeddingConfig } from './config/embeddingConfig';
 
+import { getOpenAIApiKey } from './config/envConfig';
+
 /** 
  * 環境変数的に取得できない場合はベタ書き or chrome.storage 経由のキーを使うなど 
  * セキュリティリスクに注意
  */
 // APIキーを環境変数から取得
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "YOUR_OPENAI_API_KEY";
+const OPENAI_API_KEY = getOpenAIApiKey();
 
 // Document型 (scrape.ts と同じ構造)
 interface Document {

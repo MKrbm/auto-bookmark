@@ -70,28 +70,8 @@ export default async function scrapeMain(
         charset = 'euc-jp';
       }
       
-      // レスポンスをBlobとして取得し、適切なエンコーディングで処理
-      const blob = await response.blob();
-      let html = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsText(blob, charset);
-      });
-
-      // メタタグからエンコーディングを確認（HTML内で指定されている場合）
-      const metaCharset = html.match(/<meta[^>]+charset=["']?([^"'>]+)/i)?.[1]?.toLowerCase();
-      if (metaCharset && metaCharset !== charset) {
-        // メタタグで指定されたエンコーディングが異なる場合は再度読み込み
-        const reader = new FileReader();
-        const newHtml = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsText(blob, metaCharset);
-        });
-        // より多くの文字が正しく読み込めた場合は新しい結果を使用
-        if (newHtml.length > html.length) {
-          html = newHtml;
-        }
-      }
+      // HTMLを取得
+      let html = await response.text();
 
       // HTMLかどうかの簡易チェック
       if (!html.trim().toLowerCase().startsWith('<!doctype html') && 

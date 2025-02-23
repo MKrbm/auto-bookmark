@@ -58,9 +58,10 @@ export default defineConfig({
     root: resolve(__dirname, 'src'),
     publicDir: resolve(__dirname, 'public'),
     
-    // server: {
-    //hmr: false  // HMRを無効化
-    // },
+    define: {
+        // 環境変数をグローバルに公開
+        '__VITE_OPENAI_API_KEY__': JSON.stringify(process.env.VITE_OPENAI_API_KEY),
+    },
 
     build: {
         outDir: resolve(__dirname, 'dist'),

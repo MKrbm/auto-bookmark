@@ -1,6 +1,7 @@
 import { ChunkData } from '../lib/chunkTypes';
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { defaultEmbeddingConfig } from '../lib/config/embeddingConfig';
+import { getOpenAIApiKey } from '../lib/config/envConfig';
 
 interface SearchConfig {
   model?: string;
@@ -11,7 +12,7 @@ interface SearchConfig {
 
 function createEmbeddingModel(config: SearchConfig = {}) {
   return new OpenAIEmbeddings({
-    openAIApiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
+    openAIApiKey: getOpenAIApiKey(),
     model: config.model || defaultEmbeddingConfig.model,
     dimensions: config.dimensions || defaultEmbeddingConfig.dimensions,
   });
