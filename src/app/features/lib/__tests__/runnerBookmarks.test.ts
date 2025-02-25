@@ -2,6 +2,63 @@ import { processFetchedBookmarks } from '../runnerBookmarks_new';
 import { FetchedBookmark } from '../fetchBookmarkTypes';
 import { aiSearchRepresentative } from '../../search/aiSearchRepresentative';
 
+// envConfig.tsをモック化
+jest.mock('../config/envConfig', () => ({
+  getOpenAIApiKey: () => 'test-api-key'
+}));
+
+// aiSearchRepresentativeをモック化
+jest.mock('../../search/aiSearchRepresentative', () => ({
+  aiSearchRepresentative: jest.fn().mockImplementation(async (query: string, chunks: any[]) => {
+    // "物理学"の検索結果を期待される順序で返す
+    return [
+      {
+        url: "http://fnorio.com/0074trichromatism1/trichromatism1.html",
+        title: "光と絵の具の三原色（色とは何か）",
+        score: 0.9
+      },
+      {
+        url: "https://docs.dwavesys.com/docs/latest/c_gs_2.html",
+        title: "D-WAVE",
+        score: 0.7
+      },
+      {
+        url: "https://www.langchain.com/",
+        title: "LangChain公式サイト",
+        score: 0.5
+      }
+    ];
+  })
+}));
+
+// scrape.tsをモック化
+jest.mock('../scrape', () => {
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(async (urls: string[]) => {
+      return urls.map((url: string) => ({
+        url,
+        title: 'Test Title',
+        page_content: 'Test content for testing purposes',
+        lang: 'ja'
+      }));
+    })
+  };
+});
+
+// create_vectors.tsをモック化
+jest.mock('../create_vectors', () => ({
+  create_vectorsMain: jest.fn().mockImplementation(async (pages: Array<{ docs: Array<{ url: string; title: string; page_content: string }> }>) => {
+    return pages.flatMap((page, index: number) => ({
+      chunk_index: index,
+      chunk_text: page.docs[0].page_content,
+      chunk_vector: [0.1, 0.2, 0.3],
+      url: page.docs[0].url,
+      title: page.docs[0].title
+    }));
+  })
+}));
+
 // テスト用のモックストレージを実装
 const mockStorage = {
   data: {} as { [key: string]: any },
